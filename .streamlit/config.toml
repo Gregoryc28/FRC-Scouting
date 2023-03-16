@@ -1,1 +1,27 @@
+## Ew remove this gross green background and replace it was dark mode - Ryan
+#[theme]
+#primaryColor="#91fdb9"
+#backgroundColor="#c8fedc"
+#secondaryBackgroundColor="#477d28"
+#textColor="#d4af37"
 
+
+# dark mode is cool :)
+[theme]
+
+# Primary accent for interactive elements
+primaryColor = '#7792E3'
+
+# Background color for the main content area
+backgroundColor = '#273346'
+
+# Background color for sidebar and most interactive widgets
+secondaryBackgroundColor = '#B9F1C0'
+
+# Color used for almost all text
+textColor = '#000000'
+
+# Font family for all text in the app, except code blocks
+# Accepted values (serif | sans serif | monospace) 
+# Default: "sans serif"
+font = "sans serif"
