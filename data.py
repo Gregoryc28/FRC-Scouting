@@ -596,3 +596,14 @@ def zebra_zone_percentile_piegraph(zoneData, team, matchNumber, allianceColor, m
         return plt
     except:
         return 7
+
+def get_team_match_videos(team, match_key):
+    try:
+        match_info = getTBA("match/" + match_key)
+        match_videos = match_info['videos']
+        # Get only one video from each match
+        for video in match_videos:
+            if video['type'] == 'youtube':
+                return video['key']
+    except:
+        return 7
