@@ -778,6 +778,17 @@ watchdog = {version = "*", markers = "platform_system != \"Darwin\""}
 snowflake = ["snowflake-snowpark-python"]
 
 [[package]]
+name = "streamlit-player"
+version = "0.1.5"
+description = "A streamlit component to embed video and music players from various websites."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+streamlit = ">=0.73"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -944,7 +955,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10.0,<3.11"
-content-hash = "2c38276124809980e2b801e7106ab51b4d962706501af65d65f65a551f0fd64e"
+content-hash = "b057b90a86c60084250685041d02c133274a33702891badd89e391edc7968bea"
 
 [metadata.files]
 aiohttp = []
@@ -1009,6 +1020,7 @@ semver = []
 six = []
 smmap = []
 streamlit = []
+streamlit-player = []
 toml = []
 tomli = []
 toolz = []

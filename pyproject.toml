@@ -12,6 +12,7 @@ Flask = "^2.2.0"
 urllib3 = "^1.26.12"
 matplotlib = "^3.6.3"
 streamlit = "^1.18.1"
+streamlit-player = "0.1.5"
 
 [tool.poetry.dev-dependencies]
 debugpy = "^1.6.2"
