@@ -3,8 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import requests
+import traceback
+from streamlit_player import st_player
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -20,6 +22,9 @@ namesList = get_events(year)
 for name in namesList:
     formatted = f"{name[0]}, ({name[1]})"
     formattedNames.append(formatted)
+
+formattedNames.remove("FIRST Long Island Regional #2, (2023nyli2)")
+formattedNames.insert(0, "FIRST Long Island Regional #2, (2023nyli2)")
         
 event = st.selectbox("Select an event", formattedNames)
 event_key = event[event.index('('):]
@@ -31,6 +36,11 @@ get_teams = get_events_teams(event_key)
 for team in get_teams:
     team = team[team.index(','):]
     team = team[2:]
+
+    while len(team) > 4:
+        team = team[team.index(','):]
+        team = team[2:]
+
     team_numbers.append(team)
 
 teams = st.selectbox("Select a team", team_numbers)
@@ -38,13 +48,76 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Cycle-Data", "Charge-Data", "Robot-Stats", "Team-Performance-Stats"]
+data_selection_choices = ["Cycle-Data", "Charge-Data", "Robot-Stats", "Team-Performance-Stats", "Match-Videos"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 
+if data_selector == "Match-Videos":
+    with st.spinner(f"The videos for team {team} are loading!"):
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest
+        matches.sort(key=lambda x: x[1])
+        videos = []
+        for match in matches:
+            match_key = str(match[5])
+            video = get_team_match_videos(team, match_key)
+            videos.append(video)
+        st.write(f"# :orange[The following videos are for team {team} at the {event} event.]")
+        for video in videos:
+            st_player(f"https://youtu.be/{video}")
 
+if data_selector == "Cycle-Data":
+    with st.spinner("Your data is loading!"):
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest
+        matches.sort(key=lambda x: x[1])
+        
+        num_cycles_list = []
+        avg_time_cross_list = []
+        display = True
+        
+        try:
+            for match in matches:
+                # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
+                if match[4] == 'qm':
+                    match_type = 'Qualification'
+                    times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
+                elif 'qf' in match[4]:
+                    match_type = 'Quarterfinal'
+                    times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
+                elif 'sf' in match[4]:
+                    match_type = 'Semifinal'
+                    times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
+                elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
+                    match_type = 'Final'
+                    times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
+    
+                match_key = str(match[5])
+                cycle_data = get_cycleData(match_key, match[2], times, xData)
+                num_cycles_list.append(cycle_data[1])
+                if cycle_data[0] != 7777:
+                    avg_time_cross_list.append(cycle_data[0])
+                else:
+                    pass
+                
+            total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
+            total_avg_time_cycle = round(sum(avg_time_cross_list) / len(avg_time_cross_list), 2)
+                
+        except:
+            st.write("# :red[It appears to be possible that the team you are trying to search for Data for does not participate in using the Zebra Motionworks trackers.]")
+            display = False
 
-''' Old code tested with new event/team inputs '''
+    if display:
+
+        st.info("A *cycle* is completed when a team's robot travels to their alliance's correlating loading zone, and back into their community.", icon="ℹ️")
+        
+        st.write(f"Team {team} completes an average of {total_avg_cycles} cycles per match.")
+        st.write(f"The average time it takes the team to complete a cycle is: \n{total_avg_time_cycle} seconds.")
+        st.metric("Cycles", total_avg_cycles, "8%")
+
+        st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
+
+''' Old code tested with new event/team inputs 
 
 matches = competition_match_data(team, event_key)
 # Sort the matches from earliest to latest
@@ -128,7 +201,7 @@ table_header = ['Team', 'Average Cycles', 'Average Time per Cycle']
 table_rows = [[team[0], team[1], team[2]] for team in sorted_teams]
 st.table([table_header] + table_rows)
     
-#st.write(final_leaderboard)
+#st.write(final_leaderboard) '''
 
 
 '''avg_time_charging_auto = sum(time_charging_auto) / len(time_charging_auto)
