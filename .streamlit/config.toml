@@ -25,3 +25,8 @@ textColor = '#f4f5f0'
 # Accepted values (serif | sans serif | monospace) 
 # Default: "sans serif"
 font = "sans serif"
+
+
+[runner]
+
+magicEnabled = false
