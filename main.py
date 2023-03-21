@@ -6,7 +6,7 @@ import requests
 import traceback
 from streamlit_player import st_player
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -51,6 +51,52 @@ team = teams
 data_selection_choices = ["Cycle-Data", "Charge-Data", "Robot-Stats", "Team-Performance-Stats", "Match-Videos"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
+
+if data_selector == "Team-Performance-Stats":
+    with st.spinner(f"The performance statistics of team {team} are loading"):
+        performance_stats = team_performance(team, event_key)
+        st.write(f"# :violet[The following are the performance statistics for team {team} at the {event} event.]")
+
+        wins = performance_stats[0]
+        losses = performance_stats[1]
+        win_percentage = performance_stats[2]
+        avg_match_score = performance_stats[3]
+        match_scores = performance_stats[4]
+        avg_auto_points = performance_stats[5]
+        avg_teleop_points = performance_stats[6]
+
+        st.write(f"## :green[Wins: {wins}]")
+        st.write(f"## :red[Losses: {losses}]")
+        st.write(f"## :orange[Win Percentage: {win_percentage}%]")
+        st.write(f"## :violet[Average Match Score: {avg_match_score}]")
+        st.write(f"## :violet[Average Auto Points: {avg_auto_points}]")
+        st.write(f"## :green[Average Teleop Points: {avg_teleop_points}]")
+
+        match_numbers = []
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest
+        matches.sort(key=lambda x: x[1])
+        for match in matches:
+            match_numbers.append(match[1])
+
+        tab_labels = []
+        for match in match_numbers:
+            label = f"Match {match}"
+            tab_labels.append(label)
+
+        count = 0
+        # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
+        for tab in st.tabs(tab_labels):
+            with tab:
+                match_number = match_numbers[count]
+                match_score = match_scores[count]
+                st.write(f"## :green[The match score for match :orange[{match_number}] is ] :orange[{match_score}]")
+                if match_score > avg_match_score:
+                    st.metric(label="Match Score", value=match_score, delta=f"{round(match_score - avg_match_score, 2)}% Above the teams average match score")
+                else:
+                    st.metric(label="Match Score", value=match_score, delta=f"{-round(avg_match_score - match_score, 2)}% Below the teams average match score")
+            count += 1
+
 
 if data_selector == "Match-Videos":
     with st.spinner(f"The videos for team {team} are loading!"):
