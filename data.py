@@ -607,3 +607,95 @@ def get_team_match_videos(team, match_key):
                 return video['key']
     except:
         return 7
+
+def average_speed(team, match_key):
+    # Return the average speed using the zebra data
+    # First get the zebra_speeds for the team and match, which means you need times, xData, and yData
+    # Then use the zebra_speeds function to get the speeds
+    try:
+        times, xData, yData = get_zebra_data(team, match_key)
+        speeds = zebra_speeds(times, xData, yData)
+        avg_speed = sum(speeds) / len(speeds)
+        return avg_speed
+    except:
+        return 7777
+
+def team_performance(team, event):
+    # Create multiple lists for each performance metric.
+    # Track metrics such as win, losses, and ties. Be sure to calculate win percentage aswell.
+    # Also, track metrics such as average match score
+
+    # Loop through each match and add the data to the lists
+    wins = 0
+    losses = 0
+    ties = 0
+    match_scores = []
+    win_percentage = 0
+    average_match_score = 0
+
+    try:
+        match_list = getTBA("team/frc" + team + "/event/" + event + "/matches")
+        # Sort the matches in match_list by match number
+        match_list = sorted(match_list, key=lambda k: k['match_number'])
+        for match in match_list:
+            if match['comp_level'] == 'qm':
+                if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                    if match['alliances']['red']['score'] > match['alliances']['blue']['score']:
+                        wins += 1
+                    elif match['alliances']['red']['score'] < match['alliances']['blue']['score']:
+                        losses += 1
+                    else:
+                        ties += 1
+                else:
+                    if match['alliances']['blue']['score'] > match['alliances']['red']['score']:
+                        wins += 1
+                    elif match['alliances']['blue']['score'] < match['alliances']['red']['score']:
+                        losses += 1
+                    else:
+                        ties += 1
+        win_percentage = round(wins / (wins + losses + ties) * 100, 2)
+    except:
+        pass
+
+    # Also calculate the teams average speed
+    average_speed = 0
+    match_speeds = []
+    try:
+        match_list = getTBA("team/frc" + team + "/event/" + event + "/matches")
+        for match in match_list:
+            if match['comp_level'] == 'qm':
+                # append the average speed of the match to the list
+                if (average_speed(team, match['key']) != 7777):
+                    match_speeds.append(average_speed(team, match['key']))
+                else:
+                    pass
+        average_speed = sum(match_speeds) / len(match_speeds)
+    except:
+        pass
+
+    # Also calculate the average points in auto and teleop
+    average_auto_points = 0
+    average_teleop_points = 0
+    auto_points = []
+    teleop_points = []
+    try:
+        match_list = getTBA("team/frc" + team + "/event/" + event + "/matches")
+        # Sort the matches in match_list by match number
+        match_list = sorted(match_list, key=lambda k: k['match_number'])
+        for match in match_list:
+            if match['comp_level'] == 'qm':
+                if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                    auto_points.append(match['score_breakdown']['red']['autoPoints'])
+                    teleop_points.append(match['score_breakdown']['red']['teleopPoints'])
+                    match_scores.append(match['score_breakdown']['red']['autoPoints'] + match['score_breakdown']['red']['teleopPoints'] + match['score_breakdown']['red']['foulPoints'] + match['score_breakdown']['red']['adjustPoints'])
+                else:
+                    auto_points.append(match['score_breakdown']['blue']['autoPoints'])
+                    teleop_points.append(match['score_breakdown']['blue']['teleopPoints'])
+                    match_scores.append(match['score_breakdown']['blue']['autoPoints'] + match['score_breakdown']['blue']['teleopPoints'] + match['score_breakdown']['blue']['foulPoints'] + match['score_breakdown']['blue']['adjustPoints'])
+        average_auto_points = round(sum(auto_points) / len(auto_points), 2)
+        average_teleop_points = round(sum(teleop_points) / len(teleop_points), 2)
+        average_match_score = round(sum(match_scores) / len(match_scores), 2)
+    except:
+        pass
+
+    return wins, losses, win_percentage, average_match_score, match_scores, average_auto_points, average_teleop_points
