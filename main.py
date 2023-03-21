@@ -80,6 +80,9 @@ if data_selector == "Team-Performance-Stats":
         for match in matches:
             match_numbers.append(match[1])
 
+        while (len(match_numbers) > len(match_scores)):
+            match_numbers.pop(-1)
+        
         comp_count = 0
         tab_labels = []
         for match in match_numbers:
