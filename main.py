@@ -64,6 +64,7 @@ if data_selector == "Team-Performance-Stats":
         match_scores = performance_stats[4]
         avg_auto_points = performance_stats[5]
         avg_teleop_points = performance_stats[6]
+        comp_levels = performance_stats[7]
 
         st.write(f"## :green[Wins: {wins}]")
         st.write(f"## :red[Losses: {losses}]")
@@ -79,10 +80,12 @@ if data_selector == "Team-Performance-Stats":
         for match in matches:
             match_numbers.append(match[1])
 
+        comp_count = 0
         tab_labels = []
         for match in match_numbers:
-            label = f"Match {match}"
+            label = f"{comp_levels[comp_count].upper()} Match {match}"
             tab_labels.append(label)
+            comp_count += 1
 
         count = 0
         # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
