@@ -59,7 +59,6 @@ data_selector = st.selectbox("Select a type of Data to search for", data_selecti
 if data_selector == "Team-Performance-Stats":
     with st.spinner(f"The performance statistics of team {team} are loading"):
         performance_stats = team_performance(team, event_key)
-        st.write(f"# :violet[The following are the performance statistics for team {team} at the {event} event.]")
 
         wins = performance_stats[0]
         losses = performance_stats[1]
@@ -70,42 +69,52 @@ if data_selector == "Team-Performance-Stats":
         avg_teleop_points = performance_stats[6]
         comp_levels = performance_stats[7]
 
-        st.write(f"## :green[Wins: {wins}]")
-        st.write(f"## :red[Losses: {losses}]")
-        st.write(f"## :orange[Win Percentage: {win_percentage}%]")
-        st.write(f"## :violet[Average Match Score: {avg_match_score}]")
-        st.write(f"## :violet[Average Auto Points: {avg_auto_points}]")
-        st.write(f"## :green[Average Teleop Points: {avg_teleop_points}]")
+        display = True
 
-        match_numbers = []
-        matches = competition_match_data(team, event_key)
-        # Sort the matches from earliest to latest
-        matches.sort(key=lambda x: x[1])
-        for match in matches:
-            match_numbers.append(match[1])
+        if 0 in {wins, losses, win_percentage, avg_match_score}:
+            st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
+            display = False
 
-        while (len(match_numbers) > len(match_scores)):
-            match_numbers.pop(-1)
-        
-        comp_count = 0
-        tab_labels = []
-        for match in match_numbers:
-            label = f"{comp_levels[comp_count].upper()} Match {match}"
-            tab_labels.append(label)
-            comp_count += 1
+        if display:
 
-        count = 0
-        # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
-        for tab in st.tabs(tab_labels):
-            with tab:
-                match_number = match_numbers[count]
-                match_score = match_scores[count]
-                st.write(f"## :green[Team {team}'s alliance score for match :orange[{match_number}] is ] :orange[{match_score}]")
-                if match_score > avg_match_score:
-                    st.metric(label="Match Score", value=match_score, delta=f"{round(match_score - avg_match_score, 2)}% Above the teams average match score")
-                else:
-                    st.metric(label="Match Score", value=match_score, delta=f"{-round(avg_match_score - match_score, 2)}% Below the teams average match score")
-            count += 1
+            st.write(f"# :violet[The following are the performance statistics for team {team} at the {event} event.]")
+            
+            st.write(f"## :green[Wins: {wins}]")
+            st.write(f"## :red[Losses: {losses}]")
+            st.write(f"## :orange[Win Percentage: {win_percentage}%]")
+            st.write(f"## :violet[Average Match Score: {avg_match_score}]")
+            st.write(f"## :violet[Average Auto Points: {avg_auto_points}]")
+            st.write(f"## :green[Average Teleop Points: {avg_teleop_points}]")
+    
+            match_numbers = []
+            matches = competition_match_data(team, event_key)
+            # Sort the matches from earliest to latest
+            matches.sort(key=lambda x: x[1])
+            for match in matches:
+                match_numbers.append(match[1])
+    
+            while (len(match_numbers) > len(match_scores)):
+                match_numbers.pop(-1)
+            
+            comp_count = 0
+            tab_labels = []
+            for match in match_numbers:
+                label = f"{comp_levels[comp_count].upper()} Match {match}"
+                tab_labels.append(label)
+                comp_count += 1
+    
+            count = 0
+            # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
+            for tab in st.tabs(tab_labels):
+                with tab:
+                    match_number = match_numbers[count]
+                    match_score = match_scores[count]
+                    st.write(f"## :green[Team {team}'s alliance score for match :orange[{match_number}] is ] :orange[{match_score}]")
+                    if match_score > avg_match_score:
+                        st.metric(label="Match Score", value=match_score, delta=f"{round(match_score - avg_match_score, 2)}% Above the teams average match score")
+                    else:
+                        st.metric(label="Match Score", value=match_score, delta=f"{-round(avg_match_score - match_score, 2)}% Below the teams average match score")
+                count += 1
 
 
 if data_selector == "Match-Videos":
