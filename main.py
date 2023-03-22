@@ -127,12 +127,17 @@ if data_selector == "Match-Videos":
             match_key = str(match[5])
             video = get_team_match_videos(team, match_key)
             videos.append(video)
-        st.write(f"# :orange[The following videos are for team {team} at the {event} event.]")
-        for video in videos:
-            try:
-                st_player(f"https://youtu.be/{video}")
-            except:
-                pass
+        display = True
+        if len(videos) == 0:
+            st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
+            display = False
+        if display:
+            st.write(f"# :orange[The following videos are for team {team} at the {event} event.]")
+            for video in videos:
+                try:
+                    st_player(f"https://youtu.be/{video}")
+                except:
+                    pass
 
 if data_selector == "Cycle-Data":
     with st.spinner("Your data is loading!"):
