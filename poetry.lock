@@ -785,6 +785,14 @@ category = "main"
 optional = false
 python-versions = ">=3.6"
 
+[[package]]
+name = "plotly"
+version = "5.13.1"
+description = "An open-source, interactive data visualization library for Python"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
 [package.dependencies]
 streamlit = ">=0.73"
 
@@ -997,6 +1005,7 @@ pandas = []
 parso = []
 pillow = []
 platformdirs = []
+plotly = []
 pluggy = []
 protobuf = []
 pyarrow = []
