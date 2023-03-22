@@ -6,6 +6,10 @@ import requests
 import traceback
 from streamlit_player import st_player
 
+# Data Visualization
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
 from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance
 
 #team = 564
@@ -96,7 +100,7 @@ if data_selector == "Team-Performance-Stats":
             with tab:
                 match_number = match_numbers[count]
                 match_score = match_scores[count]
-                st.write(f"## :green[The match score for match :orange[{match_number}] is ] :orange[{match_score}]")
+                st.write(f"## :green[Team {team}'s alliance score for match :orange[{match_number}] is ] :orange[{match_score}]")
                 if match_score > avg_match_score:
                     st.metric(label="Match Score", value=match_score, delta=f"{round(match_score - avg_match_score, 2)}% Above the teams average match score")
                 else:
@@ -116,7 +120,10 @@ if data_selector == "Match-Videos":
             videos.append(video)
         st.write(f"# :orange[The following videos are for team {team} at the {event} event.]")
         for video in videos:
-            st_player(f"https://youtu.be/{video}")
+            try:
+                st_player(f"https://youtu.be/{video}")
+            except:
+                pass
 
 if data_selector == "Cycle-Data":
     with st.spinner("Your data is loading!"):
@@ -130,33 +137,38 @@ if data_selector == "Cycle-Data":
         
         try:
             for match in matches:
-                # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
-                if match[4] == 'qm':
-                    match_type = 'Qualification'
-                    times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
-                elif 'qf' in match[4]:
-                    match_type = 'Quarterfinal'
-                    times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
-                elif 'sf' in match[4]:
-                    match_type = 'Semifinal'
-                    times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
-                elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
-                    match_type = 'Final'
-                    times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
-    
-                match_key = str(match[5])
-                cycle_data = get_cycleData(match_key, match[2], times, xData)
-                num_cycles_list.append(cycle_data[1])
-                if cycle_data[0] != 7777:
-                    avg_time_cross_list.append(cycle_data[0])
-                else:
+                try:
+                    # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
+                    if match[4] == 'qm':
+                        match_type = 'Qualification'
+                        times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
+                    elif 'qf' in match[4]:
+                        match_type = 'Quarterfinal'
+                        times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
+                    elif 'sf' in match[4]:
+                        match_type = 'Semifinal'
+                        times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
+                    elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
+                        match_type = 'Final'
+                        times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
+        
+                    match_key = str(match[5])
+                    cycle_data = get_cycleData(match_key, match[2], times, xData)
+                    num_cycles_list.append(cycle_data[1])
+                    if cycle_data[0] != 7777:
+                        avg_time_cross_list.append(cycle_data[0])
+                    else:
+                        pass
+
+                except:
                     pass
                 
             total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
             total_avg_time_cycle = round(sum(avg_time_cross_list) / len(avg_time_cross_list), 2)
                 
-        except:
-            st.write("# :red[It appears to be possible that the team you are trying to search for Data for does not participate in using the Zebra Motionworks trackers.]")
+        except Exception as e:
+            st.write(e)
+            #st.write("# :red[It appears to be possible that the team you are trying to search for Data for does not participate in using the Zebra Motionworks trackers.]")
             display = False
 
     if display:
@@ -165,7 +177,21 @@ if data_selector == "Cycle-Data":
         
         st.write(f"Team {team} completes an average of {total_avg_cycles} cycles per match.")
         st.write(f"The average time it takes the team to complete a cycle is: \n{total_avg_time_cycle} seconds.")
-        st.metric("Cycles", total_avg_cycles, "8%")
+
+        # Display a fancy plotly graph to analyze the data
+        #fig = go.Figure()
+        #fig.add_trace(go.Scatter(x=matches, y=num_cycles_list, mode='lines+markers', name='Number of Cycles'))
+        #fig.add_trace(go.Scatter(x=matches, y=avg_time_cross_list, mode='lines+markers', name='Average Time to Complete a Cycle'))
+        #fig.update_layout(title=f"Team {team}'s Cycle Data", xaxis_title="Match Number", yaxis_title="Number of Cycles/Average Time to Complete a Cycle")
+        #st.plotly_chart(fig)
+
+        # Do the same thing as above but clean up the x-axis
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=matches, y=num_cycles_list, mode='lines+markers', name='Number of Cycles'))
+        fig.add_trace(go.Scatter(x=matches, y=avg_time_cross_list, mode='lines+markers', name='Average Time to Complete a Cycle'))
+        fig.update_layout(title=f"Team {team}'s Cycle Data", xaxis_title="Match Number", yaxis_title="Number of Cycles/Average Time to Complete a Cycle")
+        fig.update_xaxes(tickvals=matches)
+        st.plotly_chart(fig)
 
         st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
 

@@ -476,6 +476,7 @@ def get_cycleData(match_key, alliance, times, xData):
     cross_back = False
     just_crossed_left = False
     just_crossed_right = False
+    reached_loading_zone = False
     time_to_cross = []
     current_time_crossing = 0
     times_crossed = 0
@@ -483,26 +484,22 @@ def get_cycleData(match_key, alliance, times, xData):
     if alliance == "red":
         i = 0
         while i < len(times):
-            if 38.25 > xData[i] > 16.5 and not crossing_left and not just_crossed_left:
-                crossing_left = True
-                time_to_cross.append(0)
-            if crossing_left:
-                time_to_cross[current_time_crossing] += 1
-            if xData[i] > 38.25 and crossing_left:
-                times_crossed += 1
-                current_time_crossing += 1
-                crossing_left = False
-                just_crossed_left = True
-            if 38.25 > xData[i] > 16.5 and not crossing_right and just_crossed_left:
+            # Check if the robot has crossed to the blue side and back.
+            if 38.25 > xData[i] > 16.5 and not crossing_right and not just_crossed_right:
                 crossing_right = True
                 time_to_cross.append(0)
             if crossing_right:
                 time_to_cross[current_time_crossing] += 1
-            if xData[i] < 16.5 and crossing_right:
+            if xData[i] < 16.5 and crossing_right and reached_loading_zone:
                 times_crossed += 1
                 current_time_crossing += 1
                 crossing_right = False
-                just_crossed_left = False
+                just_crossed_right = True
+                reached_loading_zone = False
+            if xData[i] > 38.25 and just_crossed_right:
+                just_crossed_right = False
+            if xData[i] < 16.5 and crossing_right:
+                reached_loading_zone = True
             
             i += 1
 
@@ -512,26 +509,22 @@ def get_cycleData(match_key, alliance, times, xData):
     if alliance == "blue":
         i = 0
         while i < len(times):
-            if 38.25 > xData[i] > 16.5 and not crossing_right and not just_crossed_right:
-                crossing_right = True
-                time_to_cross.append(0)
-            if crossing_right:
-                time_to_cross[current_time_crossing] += 1
-            if xData[i] < 16.5 and crossing_right:
-                times_crossed += 1
-                current_time_crossing += 1
-                crossing_right = False
-                just_crossed_right = True
-            if 38.25 > xData[i] > 16.5 and not crossing_left and just_crossed_right:
+            # Check if the robot has crossed to the red side and back.
+            if 38.25 > xData[i] > 16.5 and not crossing_left and not just_crossed_left:
                 crossing_left = True
                 time_to_cross.append(0)
             if crossing_left:
                 time_to_cross[current_time_crossing] += 1
-            if xData[i] > 38.25 and crossing_left:
+            if xData[i] > 38.25 and crossing_left and reached_loading_zone:
                 times_crossed += 1
                 current_time_crossing += 1
                 crossing_left = False
-                just_crossed_right = False
+                just_crossed_left = True
+                reached_loading_zone = False
+            if xData[i] < 16.5 and just_crossed_left:
+                just_crossed_left = False
+            if xData[i] > 38.25 and crossing_left:
+                reached_loading_zone = True
             
             i += 1
 
@@ -638,20 +631,21 @@ def team_performance(team, event):
         # Sort the matches in match_list by match number
         match_list = sorted(match_list, key=lambda k: k['match_number'])
         for match in match_list:
-            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
-                if match['alliances']['red']['score'] > match['alliances']['blue']['score']:
-                    wins += 1
-                elif match['alliances']['red']['score'] < match['alliances']['blue']['score']:
-                    losses += 1
+            if match['score_breakdown'] is not None:
+                if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                    if match['alliances']['red']['score'] > match['alliances']['blue']['score']:
+                        wins += 1
+                    elif match['alliances']['red']['score'] < match['alliances']['blue']['score']:
+                        losses += 1
+                    else:
+                        ties += 1
                 else:
-                    ties += 1
-            else:
-                if match['alliances']['blue']['score'] > match['alliances']['red']['score']:
-                    wins += 1
-                elif match['alliances']['blue']['score'] < match['alliances']['red']['score']:
-                    losses += 1
-                else:
-                    ties += 1
+                    if match['alliances']['blue']['score'] > match['alliances']['red']['score']:
+                        wins += 1
+                    elif match['alliances']['blue']['score'] < match['alliances']['red']['score']:
+                        losses += 1
+                    else:
+                        ties += 1
         win_percentage = round(wins / (wins + losses + ties) * 100, 2)
     except:
         pass
@@ -682,18 +676,20 @@ def team_performance(team, event):
         # Sort the matches in match_list by match number
         match_list = sorted(match_list, key=lambda k: k['match_number'])
         for match in match_list:
-            comp_levels.append(match['comp_level'])
-            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
-                auto_points.append(match['score_breakdown']['red']['autoPoints'])
-                teleop_points.append(match['score_breakdown']['red']['teleopPoints'])
-                match_scores.append(match['score_breakdown']['red']['autoPoints'] + match['score_breakdown']['red']['teleopPoints'] + match['score_breakdown']['red']['foulPoints'] + match['score_breakdown']['red']['adjustPoints'] + match['score_breakdown']['red']['linkPoints'])
-            else:
-                auto_points.append(match['score_breakdown']['blue']['autoPoints'])
-                teleop_points.append(match['score_breakdown']['blue']['teleopPoints'])
-                match_scores.append(match['score_breakdown']['blue']['autoPoints'] + match['score_breakdown']['blue']['teleopPoints'] + match['score_breakdown']['blue']['foulPoints'] + match['score_breakdown']['blue']['adjustPoints'] + match['score_breakdown']['blue']['linkPoints'])
-        average_auto_points = round(sum(auto_points) / len(auto_points), 2)
-        average_teleop_points = round(sum(teleop_points) / len(teleop_points), 2)
-        average_match_score = round(sum(match_scores) / len(match_scores), 2)
+            # Check if the match is finished
+            if match['score_breakdown'] is not None:
+                comp_levels.append(match['comp_level'])
+                if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                    auto_points.append(match['score_breakdown']['red']['autoPoints'])
+                    teleop_points.append(match['score_breakdown']['red']['teleopPoints'])
+                    match_scores.append(match['score_breakdown']['red']['autoPoints'] + match['score_breakdown']['red']['teleopPoints'] + match['score_breakdown']['red']['foulPoints'] + match['score_breakdown']['red']['adjustPoints'] + match['score_breakdown']['red']['linkPoints'])
+                else:
+                    auto_points.append(match['score_breakdown']['blue']['autoPoints'])
+                    teleop_points.append(match['score_breakdown']['blue']['teleopPoints'])
+                    match_scores.append(match['score_breakdown']['blue']['autoPoints'] + match['score_breakdown']['blue']['teleopPoints'] + match['score_breakdown']['blue']['foulPoints'] + match['score_breakdown']['blue']['adjustPoints'] + match['score_breakdown']['blue']['linkPoints'])
+            average_auto_points = round(sum(auto_points) / len(auto_points), 2)
+            average_teleop_points = round(sum(teleop_points) / len(teleop_points), 2)
+            average_match_score = round(sum(match_scores) / len(match_scores), 2)
     except:
         pass
 
