@@ -162,9 +162,13 @@ if data_selector == "Cycle-Data":
 
                 except:
                     pass
-                
-            total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
-            total_avg_time_cycle = round(sum(avg_time_cross_list) / len(avg_time_cross_list), 2)
+
+            try:
+                total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
+                total_avg_time_cycle = round(sum(avg_time_cross_list) / len(avg_time_cross_list), 2)
+            except:
+                st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
+                display = False
                 
         except Exception as e:
             st.write(e)
