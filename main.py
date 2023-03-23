@@ -10,7 +10,7 @@ from streamlit_player import st_player
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -52,7 +52,7 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Cycle-Data", "Charge-Data", "Robot-Stats", "Team-Performance-Stats", "Match-Videos"]
+data_selection_choices = ["Team-Performance-Stats", "Charge-Data", "Robot-Stats", "Cycle-Data", "Match-Videos", "Event-Stats"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 
@@ -193,8 +193,8 @@ if data_selector == "Cycle-Data":
 
         st.info("A *cycle* is completed when a team's robot travels to their alliance's correlating loading zone, and back into their community.", icon="ℹ️")
         
-        st.write(f"Team {team} completes an average of {total_avg_cycles} cycles per match.")
-        st.write(f"The average time it takes the team to complete a cycle is: \n{total_avg_time_cycle} seconds.")
+        st.write(f"Team {team} completes an average of :orange[**{total_avg_cycles} cycles**] per match.")
+        st.write(f"The average time it takes the team to complete a cycle is: :orange[**{total_avg_time_cycle} seconds**].")
 
         # Display a fancy plotly graph to analyze the data
         #fig = go.Figure()
@@ -203,39 +203,37 @@ if data_selector == "Cycle-Data":
         #fig.update_layout(title=f"Team {team}'s Cycle Data", xaxis_title="Match Number", yaxis_title="Number of Cycles/Average Time to Complete a Cycle")
         #st.plotly_chart(fig)
 
+        match_nums = []
+        for match in matches:
+            # Append the match comp level and match number to the list
+            match_nums.append(f"{match[4].upper()} {match[1]}")
+
+        #Sort the match_nums list by QM matches first, then SF, then QF, then F
+        # Correlate QM to 1, SF to 2, QF to 3, and F to 4
+        match_nums.sort(key=lambda x: (1 if 'QM' in x else 2 if 'SF' in x else 3 if 'QF' in x else 4 if 'F' in x else 5))
+
         # Do the same thing as above but clean up the x-axis
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=matches, y=num_cycles_list, mode='lines+markers', name='Number of Cycles'))
-        fig.add_trace(go.Scatter(x=matches, y=avg_time_cross_list, mode='lines+markers', name='Average Time to Complete a Cycle'))
+        fig.add_trace(go.Scatter(x=match_nums, y=num_cycles_list, mode='lines+markers', name='Number of Cycles'))
+        fig.add_trace(go.Scatter(x=match_nums, y=avg_time_cross_list, mode='lines+markers', name='Average Time to Complete a Cycle'))
         fig.update_layout(title=f"Team {team}'s Cycle Data", xaxis_title="Match Number", yaxis_title="Number of Cycles/Average Time to Complete a Cycle")
-        fig.update_xaxes(tickvals=matches)
+        # List the match numbers in the x-axis
+        fig.update_xaxes(tickvals=match_nums)
         st.plotly_chart(fig)
 
         st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
 
-''' Old code tested with new event/team inputs 
+if data_selector == "Robot-Stats":
+    # The first robot statistic will be the average speed of the robot.
+    # To get the average speed we will use the zebra_speed function
 
-matches = competition_match_data(team, event_key)
-# Sort the matches from earliest to latest
-matches.sort(key=lambda x: x[1])
+    avg_speed_list = []    
+    times_in_defense_list = []
 
-time_charging_auto = []
-charging_confirms_auto = []
-num_cycles_list = []
-avg_time_cross_list = []
-
-num_cycles_leaderboard = []
-avg_time_cycle_leaderboard = []
-working_teams = []
-
-gather_teams = get_events_teams(event_key)
-
-for team in gather_teams:
-    try:
-        team = team[team.index(','):]
-        team = team[2:]
-        matches = competition_match_data(team, event_key)
-        for match in matches:
+    # Get the average speed for the selected team by using the average_speed function
+    matches = competition_match_data(team, event_key)
+    for match in matches:
+        try:
             # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
             if match[4] == 'qm':
                 match_type = 'Qualification'
@@ -249,90 +247,262 @@ for team in gather_teams:
             elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
                 match_type = 'Final'
                 times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
-            #times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
-            #zoneData = get_zoneData(team, event, match, times, xData, yData)
-            #pie_graph = zebra_zone_percentile_piegraph(zoneData, team, match[1], match[2], match_type)
-            #if pie_graph != 7:
-                #st.pyplot(pie_graph)
-            match_key = str(match[5])
-            cycle_data = get_cycleData(match_key, match[2], times, xData)
-            num_cycles_list.append(cycle_data[1])
-            if cycle_data[0] != 7777:
-                avg_time_cross_list.append(cycle_data[0])
-            else:
-                pass
-            #time_to_charge_auto = get_timeChargingAuto(team, event, match, times, xData, yData)
-            #time_charging_auto.append(time_to_charge_auto)
-            #confirm_auto = get_autoChargeConfirmation(match_key, match[2], match[3])
-            #charging_confirms_auto.append(confirm_auto)
-            #st.write(get_autoChargeConfirmation(match_key, match[2], match[3]))
-        
-        total_avg_cycles = sum(num_cycles_list) / len(num_cycles_list)
-        total_avg_time_cycle = sum(avg_time_cross_list) / len(avg_time_cross_list)
-        
-        num_cycles_leaderboard.append(total_avg_cycles)
-        avg_time_cycle_leaderboard.append(total_avg_time_cycle)
-        
-        working_teams.append(team)
-    except:
-        pass
+            # Get the average speed of the robot
+            speed = average_speed(times, xData, yData)
+            avg_speed_list.append(speed)
+            time_defense = determineDefense(team, event_key, match[2], times, xData, yData)
+            times_in_defense_list.append(time_defense)
 
-#st.write(f"Team {team} completes an average of {total_avg_cycles} cycles per match.")
-#st.write(f"The average time it takes the team to complete a cycle is: \n{total_avg_time_cycle}")
+        except:
+            pass
 
-final_leaderboard = []
-current_pos = 0
+    # If any speeds in avg_speed_list are 7777, remove them
+    for speed in avg_speed_list:
+        if speed == 7777:
+            avg_speed_list.remove(speed)
+    # Check again
+    for speed in avg_speed_list:
+        if speed == 7777:
+            avg_speed_list.remove(speed)
+    # Get the average speed of the robot
+    average_speed = round(sum(avg_speed_list) / len(avg_speed_list), 2)
 
-for team in working_teams:
-    final_leaderboard.append((team, num_cycles_leaderboard[current_pos], avg_time_cycle_leaderboard[current_pos]))
-    
-    current_pos += 1
+    # Display the average speed of the robot
+    st.write(f"Team {team} has an average speed of :orange[**{average_speed} ft/s**]")
 
-# Sort the list of tuples based on the second element (average number of cycles)
-sorted_teams = sorted(final_leaderboard, key=lambda x: x[1], reverse=True)
+    # Get the average time the robot spends in a defense
+    average_time_defense = round(sum(times_in_defense_list) / len(times_in_defense_list), 2)
 
-# Display the sorted list in a table format using Streamlit
-st.write('## Leaderboard')
-table_header = ['Team', 'Average Cycles', 'Average Time per Cycle']
-table_rows = [[team[0], team[1], team[2]] for team in sorted_teams]
-st.table([table_header] + table_rows)
-    
-#st.write(final_leaderboard) '''
+    is_defense = False
+    # Check if the average time the robot spends in a defense is greater than half the length of a match
+    if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 3):
+        is_defense = True
 
+    # Display the average time the robot spends in a defense
+    st.write(f"Team {team} spends an average of :orange[**{average_time_defense} seconds**] playing defense.")
 
-'''avg_time_charging_auto = sum(time_charging_auto) / len(time_charging_auto)
-st.write(f"The average time spent on the charge station during autonomous of each match for team {team}, was: \n{avg_time_charging_auto}")
-
-num_successful_charges_auto = 0
-num_docked_auto = 0
-num_engaged_auto = 0
-for item in charging_confirms_auto:
-    if item in ("Docked", "Engaged"):
-        num_successful_charges_auto += 1
-        if item == "Docked":
-            num_docked_auto += 1
-        else:
-            num_engaged_auto += 1
+    # Display our prediction of whether the robot is a defense robot or not
+    if is_defense:
+        st.write(f"Using our algorithm, we predict that Team {team} is :orange[**a defensive robot**].")
+        st.warning("This is not a guarantee that the robot is a defensive robot, but it is a good indicator that it is a defensive robot.", icon="⚠️")
     else:
-        pass
+        st.write(f"Using our algorithm, we predict that Team {team} is :orange[**not a defensive robot**].")
+        st.warning("This is not a guarantee that the robot is not a defensive robot, but it is a good indicator that it is not a defensive robot.", icon="⚠️")
 
-st.write(f"The number of successful times this team gained points from charging during autonomous was: \n{num_successful_charges_auto}")
-st.write(f"The number of times the team successfully DOCKED during autonomous was: \n{num_docked_auto}")
-st.write(f"The number of times the team successfully ENGAGED during autonomous was: \n{num_engaged_auto}")
+    # Display a pie chart of the average time the robot spends in defense zones to represent our prediction
+    fig = go.Figure(data=[go.Pie(labels=['Time in Defense Zones (seconds)', 'Time Not in Defense Zones (seconds)'], values=[average_time_defense, (len(times)/10 - (len(times)/10 * .1)) - average_time_defense])])
+    fig.update_layout(title=f"Team {team}'s Average Time in Defense Zones (% of match)")
+    st.plotly_chart(fig)
 
-num_attempted_charges_auto = 0
-for item in time_charging_auto:
-    if item != 0:
-        num_attempted_charges_auto += 1
+    st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
+
+if data_selector == "Charge-Data":
+
+    st.warning("This data can take a while to load due to the large quantity and numerous calculations. Please be patient.", icon="⚠️")
+    with st.spinner("Loading..."):
+
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest.
+        match_sort_items = []
+        for match in matches:
+            # Trim match[5] by removing the _ and everything before it
+            match_sort_items.append(match[5].split('_')[1])
+        # Sort the match_sort_items list by qm first, then qf, then sf, then f
+        match_sort_items.sort(key=lambda x: (1 if 'qm' in x else 2 if 'sf' in x else 3 if 'qf' in x else 4 if 'f' in x else 5))
+
+        teleop_attempted_charges = []
+        teleop_successful_charges = []
+        teleop_charge_types = []
+        autonomous_attempted_charges = []
+        autonomous_successful_charges = []
+        autonomous_charge_types = []
+
+        try:
+
+            matches = competition_match_data(team, event_key)
+            # Sort the matches list by comparing the match_sort_items list to the endings of the match keys
+            matches.sort(key=lambda x: match_sort_items.index(x[5].split('_')[1]))
+            
+            # Remove any matches in the matches list that are not qualification matches
+            for match in matches:
+                if match[4] != 'qm':
+                    matches.remove(match)
+            # Check again
+            for match in matches:
+                if match[4] != 'qm':
+                    matches.remove(match)
+
+            for match in matches:
+                # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
+                if match[4] == 'qm':
+                    match_type = 'Qualification'
+                    times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
+                elif 'qf' in match[4]:
+                    match_type = 'Quarterfinal'
+                    times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
+                elif 'sf' in match[4]:
+                    match_type = 'Semifinal'
+                    times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
+                elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
+                    match_type = 'Final'
+                    times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
+
+                match_key = str(match[5])
+                position = match[3]
+                color = match[2]
+
+                charge_data = getChargeConsistency(position, match_key, color, times, xData, yData)
+                teleop_attempted_charges.append(charge_data[0])
+                teleop_successful_charges.append(charge_data[1])
+                teleop_charge_types.append(charge_data[2])
+                autonomous_attempted_charges.append(charge_data[3])
+                autonomous_successful_charges.append(charge_data[4])
+                autonomous_charge_types.append(charge_data[5])
+        except:
+            pass
+
+        total_attempted_teleop_charges_num = 0
+        total_successful_teleop_charges_num = 0
+        total_attempted_autonomous_charges_num = 0
+        total_successful_autonomous_charges_num = 0
+        total_engaged_charges_num = 0
+        total_docked_charge_num = 0
+
+        for charge in teleop_attempted_charges:
+            if charge == True:
+                total_attempted_teleop_charges_num += 1
+        for charge in teleop_successful_charges:
+            if charge == True:
+                total_successful_teleop_charges_num += 1
+        for charge in autonomous_attempted_charges:
+            if charge == True:
+                total_attempted_autonomous_charges_num += 1
+        for charge in autonomous_successful_charges:
+            if charge == True:
+                total_successful_autonomous_charges_num += 1
+        for charge in teleop_charge_types:
+            if charge == 'Engaged':
+                total_engaged_charges_num += 1
+            elif charge == 'Docked':
+                total_docked_charge_num += 1
+        for charge in autonomous_charge_types:
+            if charge == 'Engaged':
+                total_engaged_charges_num += 1
+            elif charge == 'Docked':
+                total_docked_charge_num += 1
+
+        check_for_data = True
+
+        # Check if total attempted teleop or autonomous charges is 0
+        if total_attempted_teleop_charges_num == 0 or total_attempted_autonomous_charges_num == 0:
+            check_for_data = False
+            # Send a warning saying that this team has not attempted to charge.
+            st.warning(f"Team {team} has no charge data. This could be due to no attempt at charging.", icon="⚠️")
+
+        if check_for_data:
+            st.title(f"Charge Data for Team {team}")
+
+            teleop_charge_success_rate = (total_successful_teleop_charges_num / total_attempted_teleop_charges_num) * 100
+            autonomous_charge_success_rate = (total_successful_autonomous_charges_num / total_attempted_autonomous_charges_num) * 100
+
+            st.write(f"**Teleop Charge Success Rate:** {teleop_charge_success_rate} %")
+            st.write(f"**Autonomous Charge Success Rate:** {autonomous_charge_success_rate} %")
+
+            engaged_rate = (total_engaged_charges_num / (total_engaged_charges_num + total_docked_charge_num)) * 100
+
+            st.write(f"**Engaged Charge Rate:** {engaged_rate} %")
+
+            # Display a chart representing teleop charge success rate, autonomous charge success rate, and engaged charge rate
+            fig = go.Figure(data=[go.Pie(labels=['Teleop Charge Success Rate', 'Autonomous Charge Success Rate', 'Engaged Charge Rate'], values=[teleop_charge_success_rate, autonomous_charge_success_rate, engaged_rate])])
+            fig.update_layout(title=f"Team {team}'s Charge Success Rate")
+            st.plotly_chart(fig)
+
+            st.write(f"**Total Attempted Teleop Charges:** {total_attempted_teleop_charges_num}")
+            st.write(f"**Total Successful Teleop Charges:** {total_successful_teleop_charges_num}")
+            st.write(f"**Total Attempted Autonomous Charges:** {total_attempted_autonomous_charges_num}")
+            st.write(f"**Total Successful Autonomous Charges:** {total_successful_autonomous_charges_num}")
+
+            st.write(f"**Total Engaged Charges:** {total_engaged_charges_num}")
+            st.write(f"**Total Docked Charges:** {total_docked_charge_num}")
+
+            st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
+    
+if data_selector == "Event-Stats":
+    # Display the event statistics.
+    st.title(f"Event Statistics for {event_key}")
+
+    if st.checkbox("Show Event Rankings"):
+        # Utilize the getRankings/getTeamRank/getTeamRecord/getPlayoffAlliances/getTeamOPRS/getTeamDRPS/getTeamCCWMs functions to display the event statistics.
+        rankings = getRankings(event_key)
+        # Create a leaderboard using the rankings and matplotlib.
+        # Convert the rankings to a dictionary.
+        rankings_dict = {}
+        for teamy in rankings:
+            rankings_dict[teamy[0]] = teamy[1]
+        plotly_fig = go.Figure(data=[go.Table(header=dict(values=['Rank', 'Team']), cells=dict(values=[list(rankings_dict.keys()), list(rankings_dict.values())]))])
+        # Resize the plotly figure.
+        plotly_fig.update_layout(width=1000, height=1000)
+        # Center the plotly figure.
+        plotly_fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+        st.plotly_chart(plotly_fig)
+
+    team_rank = getTeamRank(team, event_key)
+    # Check if team_rank is 7777
+    if team_rank == 7777:
+        st.write(f":red[The team rank for team {team} is not currently available.]")
     else:
-        pass
+        st.write(f"Team Rank: \n{team_rank}")
 
-if num_successful_charges_auto != 0:
-    success_percent_auto = (num_attempted_charges_auto / num_successful_charges_auto) * 100
-else:
-    success_percent_auto = 0
+    team_record = getTeamRecord(team, event_key)
+    # Check if team_record is 7777, 7777, 7777
+    if team_record == (7777, 7777, 7777):
+        st.write(f":red[The team record for team {team} is not currently available.]")
+    else:
+        # Format the team record like wins-losses-ties.
+        team_record = f"{team_record[0]}-{team_record[1]}-{team_record[2]}"
+        st.write(f"Team Record: \n{team_record}")
 
-st.write(f"The success rate of this team charging in auto was: \n{success_percent_auto}")
+    st.info("OPR stands for Offensive Power Rating, which is a system to attempt to deduce the average point contribution of a team to an alliance.", icon="ℹ️")
+    team_oprs = getTeamOPRS(team, event_key)
+    # Check if team_oprs is 7777
+    if team_oprs == 7777:
+        st.write(f":red[The team OPRs for team {team} are not currently available.]")
+    else:
+        st.write(f"Team OPRs: \n{team_oprs}")
 
+    st.info("DPR stands for Defensive Power Rating, which is a system to attempt to deduce the average point reduction of a team to an alliance.", icon="ℹ️")
+    team_drps = getTeamDPRS(team, event_key)
+    # Check if team_drps is 7777
+    if team_drps == 7777:
+        st.write(f":red[The team DPRs for team {team} are not currently available.]")
+    else:
+        st.write(f"Team DPRs: \n{team_drps}")
 
-st.write(time_charging_auto)'''
+    st.info("CCWM stands for Calculated Contribution to Winning Margin, which is a metric that combines OPR and DPR to estimate how much a team contributes to the win margin of a match.", icon="ℹ️")
+    team_ccwms = getTeamCCWM(team, event_key)
+    # Check if team_ccwms is 7777
+    if team_ccwms == 7777:
+        st.write(f":red[The team CCWMs for team {team} are not currently available.]")
+    else:
+        st.write(f"Team CCWMs: \n{team_ccwms}")
+
+    playoff_alliances = getPlayoffAlliances(event_key)
+    # Check if playoff_alliances is 7777
+    if playoff_alliances == 7777:
+        st.write(f":red[The playoff alliances for event {event_key} are not currently available.]")
+    else:
+        # Convert the playoff alliances to a dictionary.
+        playoff_alliances_dict = {}
+        alliance_number = 1
+        for alliance in playoff_alliances:
+            # Format the alliance teams into a string.
+            alliance = ", ".join(alliance)
+            # Remove the "frc" from the alliance teams.
+            alliance = alliance.replace("frc", "")
+            playoff_alliances_dict[f"Alliance {alliance_number}"] = alliance
+            alliance_number += 1
+        # Format the playoff alliances into a table using plotly.
+        plotly_fig = go.Figure(data=[go.Table(header=dict(values=['Alliance', 'Teams']), cells=dict(values=[list(playoff_alliances_dict.keys()), list(playoff_alliances_dict.values())]))])
+        # Get rid of margins
+        plotly_fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+        st.plotly_chart(plotly_fig)

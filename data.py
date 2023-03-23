@@ -470,6 +470,18 @@ def get_autoChargeConfirmation(match_key, alliance, position):
     except:
         pass
 
+def get_teleopChargeConfirmation(match_key, alliance, position):
+        # Check if the team docked, parked, engaged, or did nothing in auto on the charge station
+    try:
+        # print the score_breakdown dictionary
+        match_info = getTBA("match/" + match_key)
+        score_breakdown = match_info["score_breakdown"]
+        charging = score_breakdown[alliance][f"teleopChargeStationRobot{position}"]
+        return charging
+        #return score_breakdown
+    except:
+        pass
+
 def get_cycleData(match_key, alliance, times, xData):
     crossing_left = False
     crossing_right = False
@@ -601,13 +613,12 @@ def get_team_match_videos(team, match_key):
     except:
         return 7
 
-def average_speed(team, match_key):
+def average_speed(times, xData, yData):
     # Return the average speed using the zebra data
     # First get the zebra_speeds for the team and match, which means you need times, xData, and yData
     # Then use the zebra_speeds function to get the speeds
     try:
-        times, xData, yData = get_zebra_data(team, match_key)
-        speeds = zebra_speeds(times, xData, yData)
+        speeds = zebra_speed(times, xData, yData)
         avg_speed = sum(speeds) / len(speeds)
         return avg_speed
     except:
@@ -694,3 +705,181 @@ def team_performance(team, event):
         pass
 
     return wins, losses, win_percentage, average_match_score, match_scores, average_auto_points, average_teleop_points, comp_levels
+
+def getRankings(event_key):
+    # Get the rankings for the event
+    rankings = getTBA("event/" + event_key + "/rankings")
+    rank_list = []
+    team_list = []
+    
+    # Loop through each team and add the rank and team number to the lists
+    for team in rankings['rankings']:
+        rank_list.append(team['rank'])
+        team_list.append(team['team_key'][3:])
+
+    tuple_list = list(zip(rank_list, team_list))
+    # Sort the tuple list by rank
+    tuple_list = sorted(tuple_list, key=lambda k: k[0])
+
+    return tuple_list
+
+def returnRankings(event_key):
+    # Return the rankings for the event
+    rankings = getTBA("event/" + event_key + "/rankings")
+    return rankings
+
+def getTeamRank(team, event_key):
+    # Get the rank of the team
+    try:
+        rankings = returnRankings(event_key)
+        for teamy in rankings['rankings']:
+            if teamy['team_key'][3:] == team:
+                return teamy['rank']
+    except:
+        return 7777
+
+def getTeamRecord(team, event_key):
+    # Get the record of the team
+    try:
+        rankings = returnRankings(event_key)
+        for rank in rankings['rankings']:
+            if rank['team_key'][3:] == team:
+                return rank['record']['wins'], rank['record']['losses'], rank['record']['ties']
+    except:
+        return 7777, 7777, 7777
+
+def getTeamOPRS(team, event_key):
+    # Get the OPRS of the team
+    try:
+        oprs = getTBA("event/" + event_key + "/oprs")
+        return round(oprs['oprs']['frc' + team], 2)
+    except:
+        return 7777
+
+def getTeamDPRS(team, event_key):
+    # Get the DPRS of the team
+    try:
+        dprs = getTBA("event/" + event_key + "/oprs")
+        return round(dprs['dprs']['frc' + team], 2)
+    except:
+        return 7777
+
+def getTeamCCWM(team, event_key):
+    # Get the CCWM of the team
+    try:
+        ccwms = getTBA("event/" + event_key + "/oprs")
+        return round(ccwms['ccwms']['frc' + team], 2)
+    except:
+        return 7777
+
+def getPlayoffAlliances(event_key):
+    # Get the playoff alliances for the event
+    playoff_alliances = getTBA("event/" + event_key + "/alliances")
+    alliance_list = []
+    for alliance in playoff_alliances:
+        alliance_list.append(alliance['picks'])
+    return alliance_list
+
+# This function will be used to gather charge consistency data for a team.
+def getChargeConsistency(position, match_key, alliance, times, xData, yData):
+    # Red Alliance Charge Station Zone
+    # 16.1 > xData[i] > 11.1 and 21.3 > yData[i] > 13.3
+    # Blue Alliance Charge Station Zone
+    # 43.3 > xData[i] > 38.3 and 21.3 > yData[i] > 13.3
+
+    # Autonomous charging will occur from times 0 to 15 seconds
+    # Teleop charging will occur from times 15 to 135 seconds
+
+    teleop_attempted_charge = False
+    teleop_charged = False
+    auto_attempted_charge = False
+    auto_charged = False
+    teleop_type_charge = 'None'
+    auto_type_charge = 'None'
+
+    for i in range(len(times)):
+        if alliance == 'red':
+            if 16.1 > xData[i] > 11.1 and 21.3 > yData[i] > 13.3 and not auto_attempted_charge and not teleop_attempted_charge:
+                if times[i] < 15:
+                    auto_attempted_charge = True
+                else:
+                    teleop_attempted_charge = True
+                # Check if the robot actually charged in teleop
+                try:
+                    if teleop_attempted_charge or auto_attempted_charge:
+                        match_info = getTBA("match/" + match_key)
+                        score_breakdown = match_info["score_breakdown"]
+                        charging = score_breakdown['red'][f"endGameChargeStationRobot{position}"]
+                        if charging == "Docked" or charging == "Engaged":
+                            teleop_charged = True
+                            if charging == "Docked":
+                                teleop_type_charge = 'Docked'
+                            else:
+                                teleop_type_charge = 'Engaged'
+
+                        # Check if the robot actually charged in auto
+                        charging = score_breakdown['red'][f"autoChargeStationRobot{position}"]
+                        if charging == "Docked" or charging == "Engaged":
+                            auto_charged = True
+                            if charging == "Docked":
+                                auto_type_charge = 'Docked'
+                            else:
+                                auto_type_charge = 'Engaged'
+                except:
+                    pass
+        else:
+            if 43.3 > xData[i] > 38.3 and 21.3 > yData[i] > 13.3 and not auto_attempted_charge and not teleop_attempted_charge:
+                if times[i] < 15:
+                    auto_attempted_charge = True
+                else:
+                    teleop_attempted_charge = True
+                # Check if the robot actually charged in teleop
+                try:
+                    if teleop_attempted_charge or auto_attempted_charge:
+                        match_info = getTBA("match/" + match_key)
+                        score_breakdown = match_info["score_breakdown"]
+                        charging = score_breakdown['blue'][f"endGameChargeStationRobot{position}"]
+                        if charging == "Docked" or charging == "Engaged":
+                            teleop_charged = True
+                            if charging == "Docked":
+                                teleop_type_charge = 'Docked'
+                            else:
+                                teleop_type_charge = 'Engaged'
+
+                        # Check if the robot actually charged in auto
+                        charging = score_breakdown['blue'][f"autoChargeStationRobot{position}"]
+                        if charging == "Docked" or charging == "Engaged":
+                            auto_charged = True
+                            if charging == "Docked":
+                                auto_type_charge = 'Docked'
+                            else:
+                                auto_type_charge = 'Engaged'
+                except:
+                    pass
+
+    return teleop_attempted_charge, teleop_charged, teleop_type_charge, auto_attempted_charge, auto_charged, auto_type_charge
+    
+
+
+# This function will use zone data to determine if a team is mostly defense or offense. This will be a prediction that is hopefully accurate.
+def determineDefense(team, event_key, alliance, times, xData, yData):
+    # Zones indicating when a robot is defending:
+    
+    # If the red alliance is in these zones, the robot is defending
+    # Zone 1: x values: 16 to 27 y values: 0 to 8.5
+    
+    # If the blue alliance is in these zones, the robot is defending
+    # Zone 1: x values: 27 to 38 y values: 0 to 8.5
+
+    # If the time spent in the zone is greater than 50% of the match, the robot is mostly defense
+
+    time_in_zone = 0
+    for i in range(len(times)):
+        if alliance == 'red':
+            if 16 < xData[i] < 27 and 0 < yData[i] < 8.5:
+                time_in_zone += 1
+        elif alliance == 'blue':
+            if 27 < xData[i] < 38 and 0 < yData[i] < 8.5:
+                time_in_zone += 1
+
+    return time_in_zone
