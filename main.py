@@ -71,7 +71,7 @@ if data_selector == "Team-Performance-Stats":
 
         display = True
 
-        if 0 in {wins, losses, win_percentage, avg_match_score}:
+        if 0 in {win_percentage, avg_match_score}:
             st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
             display = False
 
@@ -301,28 +301,19 @@ if data_selector == "Robot-Stats":
         except:
             pass
 
-    # If any speeds in avg_speed_list are 7777, remove them
-    for speed in avg_speed_list:
-        if speed == 7777:
-            avg_speed_list.remove(speed)
-    # Check again
-    for speed in avg_speed_list:
-        if speed == 7777:
-            avg_speed_list.remove(speed)
+    # While there are still 7777's in the list, remove them
+    while 7777 in avg_speed_list:
+        avg_speed_list.remove(7777)
     # Get the average speed of the robot
     average_speed = round(sum(avg_speed_list) / len(avg_speed_list), 2)
 
     # Display the average speed of the robot
     st.write(f"Team {team} has an average speed of :orange[**{average_speed} ft/s**]")
 
-    # If any speeds in avg_speed_topPercentile_list are 7777, remove them
-    for speed in avg_speed_topPerentile_list:
-        if speed == 7777:
-            avg_speed_topPerentile_list.remove(speed)
-    # Check again
-    for speed in avg_speed_topPerentile_list:
-        if speed == 7777:
-            avg_speed_topPerentile_list.remove(speed)
+    # While there are still 7777's in the list, remove them
+    while 7777 in avg_speed_topPerentile_list:
+        avg_speed_topPerentile_list.remove(7777)
+    
     # Get the average speed of the robot
     average_speed_topPercentile = round(sum(avg_speed_topPerentile_list) / len(avg_speed_topPerentile_list), 2)
 
@@ -341,17 +332,30 @@ if data_selector == "Robot-Stats":
     # Get the average time the robot spends in a defense
     average_time_defense = round(sum(times_in_defense_list) / len(times_in_defense_list), 2)
 
-    is_defense = False
+    could_defense = False
+    likely_defense = False
+    very_defense = False
     # Check if the average time the robot spends in a defense is greater than half the length of a match
-    if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 3):
-        is_defense = True
+    if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 3) and getTeamCCWM(team, event_key) < 0:
+        likely_defense = True
+        # Check if the team spends more than 1/2 of the match in a defense
+        if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 2):
+            very_defense = True
+    if likely_defense == False and very_defense == False and getTeamCCWM(team, event_key) < 0:
+        could_defense = True
 
     # Display the average time the robot spends in a defense
     st.write(f"Team {team} spends an average of :orange[**{average_time_defense} seconds**] playing defense.")
 
     # Display our prediction of whether the robot is a defense robot or not
-    if is_defense:
-        st.write(f"Using our algorithm, we predict that Team {team} is :orange[**a defensive robot**].")
+    if very_defense:
+        st.write(f"Using our algorithm, we predict that Team {team} is :orange[**a very defensive robot**].")
+        st.warning("This is not a guarantee that the robot is a defensive robot, but it is a good indicator that it is a defensive robot.", icon="⚠️")
+    elif likely_defense:
+        st.write(f"Using our algorithm, we predict that Team {team} is :green[**likely**] to  be :orange[**a defensive robot**].")
+        st.warning("This is not a guarantee that the robot is a defensive robot, but it is a good indicator that it is a defensive robot.", icon="⚠️")
+    elif could_defense:
+        st.write(f"Using our algorithm, we predict that Team {team} :green[**could**] be :orange[**a defensive robot**].")
         st.warning("This is not a guarantee that the robot is a defensive robot, but it is a good indicator that it is a defensive robot.", icon="⚠️")
     else:
         st.write(f"Using our algorithm, we predict that Team {team} is :orange[**not a defensive robot**].")
