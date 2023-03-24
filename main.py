@@ -10,7 +10,7 @@ from streamlit_player import st_player
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -148,6 +148,7 @@ if data_selector == "Cycle-Data":
         num_cycles_list = []
         avg_time_cross_list = []
         display = True
+        distance_travelled_list = []
         
         try:
             for match in matches:
@@ -167,8 +168,12 @@ if data_selector == "Cycle-Data":
                         times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
         
                     match_key = str(match[5])
-                    cycle_data = get_cycleData(match_key, match[2], times, xData)
+                    cycle_data = get_cycleData(match_key, match[2], times, xData, yData)
                     num_cycles_list.append(cycle_data[1])
+                    if cycle_data[2] != 7777:
+                        distance_travelled_list.append(cycle_data[2])
+                    else:
+                        pass
                     if cycle_data[0] != 7777:
                         avg_time_cross_list.append(cycle_data[0])
                     else:
@@ -178,9 +183,11 @@ if data_selector == "Cycle-Data":
                     pass
 
             try:
+                total_avg_distance = round(sum(distance_travelled_list) / len(distance_travelled_list), 2)
                 total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
                 total_avg_time_cycle = round(sum(avg_time_cross_list) / len(avg_time_cross_list), 2)
-            except:
+            except Exception as e:
+                print(e)
                 st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
                 display = False
                 
@@ -195,6 +202,37 @@ if data_selector == "Cycle-Data":
         
         st.write(f"Team {team} completes an average of :orange[**{total_avg_cycles} cycles**] per match.")
         st.write(f"The average time it takes the team to complete a cycle is: :orange[**{total_avg_time_cycle} seconds**].")
+        st.write(f"The average distance travelled by the team during a cycle is: :orange[**{total_avg_distance} feet**].")
+
+        comp_levels = []
+        for match in matches:
+            comp_levels.append(match[4])
+
+        match_numbers = []
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest
+        matches.sort(key=lambda x: x[1])
+        for match in matches:
+            match_numbers.append(match[1])
+            
+        comp_count = 0
+        tab_labels = []
+        for match in match_numbers:
+            label = f"{comp_levels[comp_count].upper()} Match {match}"
+            tab_labels.append(label)
+            comp_count += 1
+    
+        count = 0
+        # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
+        for tab in st.tabs(tab_labels):
+            with tab:
+                # Display the average distance travelled for this match
+                st.metric(label="Average Distance Travelled", value=f"{round(distance_travelled_list[count], 2)} feet", delta=f"{-1 * round((distance_travelled_list[count] - total_avg_distance), 2)} feet")
+                # Display the average number of cycles for this match
+                st.metric(label="Average Number of Cycles", value=f"{num_cycles_list[count]} cycles", delta=f"{round((num_cycles_list[count] - total_avg_cycles), 2)} cycles")
+                # Display the average time to complete a cycle for this match
+                st.metric(label="Average Time to Complete a Cycle", value=f"{round(avg_time_cross_list[count], 2)} seconds", delta=f"{-1 * round((avg_time_cross_list[count] - total_avg_time_cycle), 2)} seconds")
+                count += 1
 
         # Display a fancy plotly graph to analyze the data
         #fig = go.Figure()
@@ -227,7 +265,10 @@ if data_selector == "Robot-Stats":
     # The first robot statistic will be the average speed of the robot.
     # To get the average speed we will use the zebra_speed function
 
-    avg_speed_list = []    
+    avg_speed_list = []
+    avg_speed_topPerentile_list = []
+    max_speeds_list = []
+
     times_in_defense_list = []
 
     # Get the average speed for the selected team by using the average_speed function
@@ -250,6 +291,10 @@ if data_selector == "Robot-Stats":
             # Get the average speed of the robot
             speed = average_speed(times, xData, yData)
             avg_speed_list.append(speed)
+            topSpeeds = average_speed_topPercentile(times, xData, yData)
+            avg_speed_topPerentile_list.append(topSpeeds)
+            max_speed = max_speed(times, xData, yData)
+            max_speeds_list.append(max_speed)
             time_defense = determineDefense(team, event_key, match[2], times, xData, yData)
             times_in_defense_list.append(time_defense)
 
@@ -269,6 +314,29 @@ if data_selector == "Robot-Stats":
 
     # Display the average speed of the robot
     st.write(f"Team {team} has an average speed of :orange[**{average_speed} ft/s**]")
+
+    # If any speeds in avg_speed_topPercentile_list are 7777, remove them
+    for speed in avg_speed_topPerentile_list:
+        if speed == 7777:
+            avg_speed_topPerentile_list.remove(speed)
+    # Check again
+    for speed in avg_speed_topPerentile_list:
+        if speed == 7777:
+            avg_speed_topPerentile_list.remove(speed)
+    # Get the average speed of the robot
+    average_speed_topPercentile = round(sum(avg_speed_topPerentile_list) / len(avg_speed_topPerentile_list), 2)
+
+    # Add an st.info blurb to explain that we use a top average speed to account for time sitting still in autonomous and charging
+    st.info("We use a top average speed to account for time sitting still in autonomous and charging, aswell as while placing cones and cubes.", icon="ℹ️")
+
+    # Display the average speed of the robot saying Team {team} has a top average speed of {average_speed_topPercentile} ft/s
+    st.write(f"Team {team} has a top average speed of :orange[**{average_speed_topPercentile} ft/s**]")
+
+    max_speed = max(max_speeds_list)
+    max_speed = round(max_speed, 2)
+
+    # Display the max speed of the max speeds list
+    st.write(f"Team {team} has a maximum in-match viewed speed of :orange[**{max_speed} ft/s**]")
 
     # Get the average time the robot spends in a defense
     average_time_defense = round(sum(times_in_defense_list) / len(times_in_defense_list), 2)
