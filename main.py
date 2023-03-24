@@ -227,7 +227,7 @@ if data_selector == "Cycle-Data":
         for tab in st.tabs(tab_labels):
             with tab:
                 # Display the average distance travelled for this match
-                st.metric(label="Average Distance Travelled", value=f"{round(distance_travelled_list[count], 2)} feet", delta=f"{round((distance_travelled_list[count] - total_avg_distance), 2)} feet")
+                st.metric(label="Average Distance Travelled", value=f"{round(distance_travelled_list[count], 2)} feet", delta=f"{-1 * round((distance_travelled_list[count] - total_avg_distance), 2)} feet")
                 # Display the average number of cycles for this match
                 st.metric(label="Average Number of Cycles", value=f"{num_cycles_list[count]} cycles", delta=f"{round((num_cycles_list[count] - total_avg_cycles), 2)} cycles")
                 # Display the average time to complete a cycle for this match
