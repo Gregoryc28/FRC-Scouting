@@ -482,7 +482,15 @@ def get_teleopChargeConfirmation(match_key, alliance, position):
     except:
         pass
 
-def get_cycleData(match_key, alliance, times, xData):
+def calc_distance(xData1, xData2, yData1, yData2):
+    try:
+        distance = math.sqrt(math.pow(xData1 - xData2, 2) + math.pow(yData1 - yData2, 2))
+        return distance
+    except:
+        return 7777
+
+
+def get_cycleData(match_key, alliance, times, xData, yData):
     crossing_left = False
     crossing_right = False
     cross_back = False
@@ -492,6 +500,7 @@ def get_cycleData(match_key, alliance, times, xData):
     time_to_cross = []
     current_time_crossing = 0
     times_crossed = 0
+    distance_travelled = []
     
     if alliance == "red":
         i = 0
@@ -500,7 +509,13 @@ def get_cycleData(match_key, alliance, times, xData):
             if 38.25 > xData[i] > 16.5 and not crossing_right and not just_crossed_right:
                 crossing_right = True
                 time_to_cross.append(0)
+                distance_travelled.append(0)
             if crossing_right:
+                # Add to the distance travelled the correct amount of distance
+                try:
+                    distance_travelled[current_time_crossing] += calc_distance(xData[i], xData[i-1], yData[i], yData[i-1])
+                except:
+                    pass
                 time_to_cross[current_time_crossing] += 1
             if xData[i] < 16.5 and crossing_right and reached_loading_zone:
                 times_crossed += 1
@@ -525,7 +540,13 @@ def get_cycleData(match_key, alliance, times, xData):
             if 38.25 > xData[i] > 16.5 and not crossing_left and not just_crossed_left:
                 crossing_left = True
                 time_to_cross.append(0)
+                distance_travelled.append(0)
             if crossing_left:
+                # Add to the distance travelled the correct amount of distance
+                try:
+                    distance_travelled[current_time_crossing] += calc_distance(xData[i], xData[i-1], yData[i], yData[i-1])
+                except:
+                    pass
                 time_to_cross[current_time_crossing] += 1
             if xData[i] > 38.25 and crossing_left and reached_loading_zone:
                 times_crossed += 1
@@ -548,7 +569,12 @@ def get_cycleData(match_key, alliance, times, xData):
     except:
         avg_time_to_cross = 7777
     
-    return avg_time_to_cross, times_crossed
+    try:
+        average_distance_travelled = sum(distance_travelled) / len(distance_travelled)
+    except:
+        average_distance_travelled = 7777
+
+    return avg_time_to_cross, times_crossed, average_distance_travelled
 
 def zebra_speed_percentile_graph(speeds, team, matchNumber, figure):
     plt.clf()
@@ -624,6 +650,30 @@ def average_speed(times, xData, yData):
     except:
         return 7777
 
+def average_speed_topPercentile(times, xData, yData):
+    try:
+        # First find the average speed
+        avg_speed = average_speed(times, xData, yData)
+        # Then, when creating the new average speed for this method, only include the speeds that are greater than the average speed
+        speeds = zebra_speed(times, xData, yData)
+        speeds = [x for x in speeds if x > avg_speed]
+        avg_speed_topPercentile = sum(speeds) / len(speeds)
+        return avg_speed_topPercentile
+    except:
+        return 7777
+
+def max_speed(times, xData, yData):
+    try:
+        speeds = zebra_speed(times, xData, yData)
+        # Remove any outlandish speeds from the speeds list
+        for speed in speeds:
+            if speed > 20:
+                speeds.remove(speed)
+        max_speed = max(speeds)
+        return max_speed
+    except:
+        return 7777
+
 def team_performance(team, event):
     # Create multiple lists for each performance metric.
     # Track metrics such as win, losses, and ties. Be sure to calculate win percentage aswell.
@@ -663,6 +713,7 @@ def team_performance(team, event):
 
     # Also calculate the teams average speed
     average_speed = 0
+    average_speed_top_percentile = 0
     match_speeds = []
     try:
         match_list = getTBA("team/frc" + team + "/event/" + event + "/matches")
@@ -670,6 +721,10 @@ def team_performance(team, event):
             # append the average speed of the match to the list
             if (average_speed(team, match['key']) != 7777):
                 match_speeds.append(average_speed(team, match['key']))
+            else:
+                pass
+            if (average_speed_topPercentile(team, match['key']) != 7777):
+                match_speeds.append(average_speed_topPercentile(team, match['key']))
             else:
                 pass
         average_speed = sum(match_speeds) / len(match_speeds)
@@ -799,63 +854,70 @@ def getChargeConsistency(position, match_key, alliance, times, xData, yData):
 
     for i in range(len(times)):
         if alliance == 'red':
-            if 16.1 > xData[i] > 11.1 and 21.3 > yData[i] > 13.3 and not auto_attempted_charge and not teleop_attempted_charge:
-                if times[i] < 15:
+            if times[i] < 150:
+                if 16.1 > xData[i] > 11.1 and 21.3 > yData[i] > 13.3 and not auto_attempted_charge:
                     auto_attempted_charge = True
-                else:
+            else:
+                if 16.1 > xData[i] > 11.1 and 21.3 > yData[i] > 13.3 and not teleop_attempted_charge:
                     teleop_attempted_charge = True
-                # Check if the robot actually charged in teleop
-                try:
-                    if teleop_attempted_charge or auto_attempted_charge:
-                        match_info = getTBA("match/" + match_key)
-                        score_breakdown = match_info["score_breakdown"]
-                        charging = score_breakdown['red'][f"endGameChargeStationRobot{position}"]
-                        if charging == "Docked" or charging == "Engaged":
-                            teleop_charged = True
-                            if charging == "Docked":
-                                teleop_type_charge = 'Docked'
-                            else:
-                                teleop_type_charge = 'Engaged'
-
-                        # Check if the robot actually charged in auto
-                        charging = score_breakdown['red'][f"autoChargeStationRobot{position}"]
-                        if charging == "Docked" or charging == "Engaged":
-                            auto_charged = True
-                            if charging == "Docked":
-                                auto_type_charge = 'Docked'
-                            else:
-                                auto_type_charge = 'Engaged'
-                except:
-                    pass
         else:
-            if 43.3 > xData[i] > 38.3 and 21.3 > yData[i] > 13.3 and not auto_attempted_charge and not teleop_attempted_charge:
-                if times[i] < 15:
+            if times[i] < 150:
+                if 43.3 > xData[i] > 38.3 and 21.3 > yData[i] > 13.3 and not auto_attempted_charge:
                     auto_attempted_charge = True
-                else:
+            else:
+                if 43.3 > xData[i] > 38.3 and 21.3 > yData[i] > 13.3 and not teleop_attempted_charge:
                     teleop_attempted_charge = True
-                # Check if the robot actually charged in teleop
-                try:
-                    if teleop_attempted_charge or auto_attempted_charge:
-                        match_info = getTBA("match/" + match_key)
-                        score_breakdown = match_info["score_breakdown"]
-                        charging = score_breakdown['blue'][f"endGameChargeStationRobot{position}"]
-                        if charging == "Docked" or charging == "Engaged":
-                            teleop_charged = True
-                            if charging == "Docked":
-                                teleop_type_charge = 'Docked'
-                            else:
-                                teleop_type_charge = 'Engaged'
 
-                        # Check if the robot actually charged in auto
-                        charging = score_breakdown['blue'][f"autoChargeStationRobot{position}"]
-                        if charging == "Docked" or charging == "Engaged":
-                            auto_charged = True
-                            if charging == "Docked":
-                                auto_type_charge = 'Docked'
-                            else:
-                                auto_type_charge = 'Engaged'
-                except:
-                    pass
+    if alliance == 'red':
+        # Check if the robot actually charged in teleop
+        try:
+            if teleop_attempted_charge or auto_attempted_charge:
+                match_info = getTBA("match/" + match_key)
+                score_breakdown = match_info["score_breakdown"]
+                print(match_info)
+                print(score_breakdown)
+                charging = score_breakdown['red'][f"endGameChargeStationRobot{position}"]
+                if charging == "Docked" or charging == "Engaged":
+                    teleop_charged = True
+                    if charging == "Docked":
+                        teleop_type_charge = 'Docked'
+                    else:
+                        teleop_type_charge = 'Engaged'
+
+                # Check if the robot actually charged in auto
+                charging = score_breakdown['red'][f"autoChargeStationRobot{position}"]
+                if charging == "Docked" or charging == "Engaged":
+                    auto_charged = True
+                    if charging == "Docked":
+                        auto_type_charge = 'Docked'
+                    else:
+                        auto_type_charge = 'Engaged'
+        except:
+            pass
+    else:
+        # Check if the robot actually charged in teleop
+        try:
+            if teleop_attempted_charge or auto_attempted_charge:
+                match_info = getTBA("match/" + match_key)
+                score_breakdown = match_info["score_breakdown"]
+                charging = score_breakdown['blue'][f"endGameChargeStationRobot{position}"]
+                if charging == "Docked" or charging == "Engaged":
+                    teleop_charged = True
+                    if charging == "Docked":
+                        teleop_type_charge = 'Docked'
+                    else:
+                        teleop_type_charge = 'Engaged'
+
+                # Check if the robot actually charged in auto
+                charging = score_breakdown['blue'][f"autoChargeStationRobot{position}"]
+                if charging == "Docked" or charging == "Engaged":
+                    auto_charged = True
+                    if charging == "Docked":
+                        auto_type_charge = 'Docked'
+                    else:
+                        auto_type_charge = 'Engaged'
+        except:
+            pass
 
     return teleop_attempted_charge, teleop_charged, teleop_type_charge, auto_attempted_charge, auto_charged, auto_type_charge
     
