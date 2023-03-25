@@ -9,8 +9,9 @@ from streamlit_player import st_player
 # Data Visualization
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import pandas as pd
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner, getRealMatchScore
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -610,18 +611,9 @@ if data_selector == "Match-Predictions":
         for match in matches:
             match_numbers.append(match[1])
 
-        working_matches = []
-        for match in matches:
-            if get_scoreBreakdown(match[5]) != None:
-                working_matches.append(match)
-
-        working_numbers = []
-        for match in working_matches:
-            working_numbers.append(match[1])
-
         comp_count = 0
         tab_labels = []
-        for match in working_numbers:
+        for match in match_numbers:
             label = f"{comp_levels[comp_count].upper()} Match {match}"
             tab_labels.append(label)
             comp_count += 1
@@ -631,10 +623,20 @@ if data_selector == "Match-Predictions":
         for tab in st.tabs(tab_labels):
             with tab:
                 # Get the match predictions for the match using the match_predictWinner function
-                match_predictions = match_predictWinner(event_key, working_matches[count][5])
+                match_predictions = match_predictWinner(event_key, matches[count][5])
                 winner = match_predictions[0]
                 red_score = match_predictions[1]
                 blue_score = match_predictions[2]
+                red_teams = match_predictions[3]
+                blue_teams = match_predictions[4]
+                red_oprs = match_predictions[5]
+                blue_oprs = match_predictions[6]
+
+                # Find which alliance the team is on
+                if team in red_teams:
+                    team_alliance = "Red Alliance"
+                elif team in blue_teams:
+                    team_alliance = "Blue Alliance"
 
                 # Display the predicted winner as well as the predicted match score
                 if winner == "Red Alliance":
@@ -643,5 +645,37 @@ if data_selector == "Match-Predictions":
                     st.write(f"Predicted Winner: :blue[**{winner}**]")
 
                 st.write(f"Predicted Match Score: \n:red[**{red_score}**] - :blue[**{blue_score}**]")
+
+                # Check if the team is on the predicted winner
+                if winner == team_alliance:
+                    st.success(f":white_check_mark: Team {team} is on the predicted winners alliance!")
+                else:
+                    st.error(f":x: Team {team} is not on the predicted winners alliance!")
+
+                # Format the team lists to a string
+                red_teams = ", ".join(red_teams)
+                blue_teams = ", ".join(blue_teams)
+
+                # Display the participating teams on each alliance
+                st.write(f"Red Alliance Teams: \n:red[**{red_teams}**]")
+                st.write(f"Blue Alliance Teams: \n:blue[**{blue_teams}**]")
+
+                # Round each OPR
+                red_oprs = [round(opr) for opr in red_oprs]
+                blue_oprs = [round(opr) for opr in blue_oprs]
+
+                # Create a seperate table for each alliance which shows the team number and their opr contribution using pandas dataframes
+                red_oprs_df = pd.DataFrame(list(zip(red_teams.split(", "), red_oprs)), columns =['Team', 'OPR'])
+                blue_oprs_df = pd.DataFrame(list(zip(blue_teams.split(", "), blue_oprs)), columns =['Team', 'OPR'])
+
+                # Add 1 to the index column
+                red_oprs_df.index += 1
+                blue_oprs_df.index += 1
+
+                st.table(red_oprs_df)
+                st.table(blue_oprs_df)
+
+                # Warn that the match predictions are not a guarantee
+                st.warning("The match predictions are not a guarantee and are only predictions based on the data available.", icon="⚠️")
 
                 count += 1
