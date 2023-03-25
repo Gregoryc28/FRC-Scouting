@@ -13,7 +13,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import pandas as pd
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, returnDefense, getRealMatchScore, match_predictWinner, get_scoreBreakdown 
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, returnDefense, getRealMatchScore, match_predictWinner, get_scoreBreakdown, get_matches 
 
 year = 2023
         
@@ -71,7 +71,7 @@ def check_password():
         return True
 
 if check_password():
-    matches = competition_match_data(event_key)
+    matches = get_matches(event_key)
 
     st.title("Match Predictions Analysis")
 
@@ -80,7 +80,7 @@ if check_password():
         comp_levels.append(match[4])
 
     match_numbers = []
-    matches = competition_match_data(team, event_key)
+    matches = get_matches(team, event_key)
     # Sort the matches from earliest to latest
     matches.sort(key=lambda x: x[1])
     for match in matches:

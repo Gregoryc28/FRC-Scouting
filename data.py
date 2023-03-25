@@ -29,6 +29,10 @@ def get_events_teams(event):
         team_names.append(f"{team['name']}, {team['key'][3:]}")
     return team_names
 
+def get_matches(event):
+    matches = getTBA(f"event/{event}/matches")
+    return matches
+
 def competition_match_data(team, event):
     #This function returns a list of tuples for a team
     #tup format (event, match#, color, position)
