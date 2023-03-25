@@ -10,7 +10,7 @@ from streamlit_player import st_player
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -52,7 +52,7 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Team-Performance-Stats", "Charge-Data", "Robot-Stats", "Cycle-Data", "Match-Videos", "Event-Stats"]
+data_selection_choices = ["Team-Performance-Stats", "Charge-Data", "Robot-Stats", "Cycle-Data", "Match-Videos", "Event-Stats", "Match-Predictions"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 
@@ -586,3 +586,62 @@ if data_selector == "Event-Stats":
         # Get rid of margins
         plotly_fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
         st.plotly_chart(plotly_fig)
+
+if data_selector == "Match-Predictions":
+    # Display the match predictions.
+    st.title(f"Match Predictions for {event_key}")
+
+    with st.spinner(f"The match predictions for team {team} are loading!"):
+
+        # Get the match data for the team.
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest
+        matches.sort(key=lambda x: x[1])
+
+        # Create tabs for all the matches for the team
+        comp_levels = []
+        for match in matches:
+            comp_levels.append(match[4])
+
+        match_numbers = []
+        matches = competition_match_data(team, event_key)
+        # Sort the matches from earliest to latest
+        matches.sort(key=lambda x: x[1])
+        for match in matches:
+            match_numbers.append(match[1])
+
+        working_matches = []
+        for match in matches:
+            if get_scoreBreakdown(match[5]) != None:
+                working_matches.append(match)
+
+        working_numbers = []
+        for match in working_matches:
+            working_numbers.append(match[1])
+
+        comp_count = 0
+        tab_labels = []
+        for match in working_numbers:
+            label = f"{comp_levels[comp_count].upper()} Match {match}"
+            tab_labels.append(label)
+            comp_count += 1
+        
+        count = 0
+        # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
+        for tab in st.tabs(tab_labels):
+            with tab:
+                # Get the match predictions for the match using the match_predictWinner function
+                match_predictions = match_predictWinner(event_key, working_matches[count][5])
+                winner = match_predictions[0]
+                red_score = match_predictions[1]
+                blue_score = match_predictions[2]
+
+                # Display the predicted winner as well as the predicted match score
+                if winner == "Red Alliance":
+                    st.write(f"Predicted Winner: :red[**{winner}**]")
+                elif winner == "Blue Alliance":
+                    st.write(f"Predicted Winner: :blue[**{winner}**]")
+
+                st.write(f"Predicted Match Score: \n:red[**{red_score}**] - :blue[**{blue_score}**]")
+
+                count += 1
