@@ -75,29 +75,26 @@ if check_password():
 
     st.title("Match Predictions Analysis")
 
-    comp_levels = []
-    for match in matches:
-        comp_levels.append(match[4])
-
     match_numbers = []
-    matches = get_matches(team, event_key)
+    matches = get_matches(event_key)
     # Sort the matches from earliest to latest
-    matches.sort(key=lambda x: x[1])
     for match in matches:
-        match_numbers.append(match[1])
+        match_numbers.append(match["match_number"])
+
+    match_numbers.sort()
 
     working_matches = []
     for match in matches:
-        if get_scoreBreakdown(match[5]) != None:
-            working_matches.append(match)
+        if get_scoreBreakdown(match["key"]) != None:
+            working_matches.append(match["key"])
 
     total_matches = len(working_matches)
     predicted_correctly = 0
 
     # Get the real match score to determine the winner of each match, and the predicted winner of each match
     for match in working_matches:
-        real_data = getRealMatchScore(match["key"])
-        predicted_data = match_predictWinner(match["key"])
+        real_data = getRealMatchScore(match)
+        predicted_data = match_predictWinner(event_key, match)
 
         # Get the predicted winner of each match
         predicted_winner = predicted_data[0]
@@ -113,8 +110,9 @@ if check_password():
             predicted_correctly += 1
 
     # Calculate the percentage of matches that were predicted correctly
+    num_correct = predicted_correctly
     predicted_correctly = predicted_correctly / total_matches
-    predicted_correctly = predicted_correctly * 100
+    predicted_correctly = round(predicted_correctly * 100, 2)
 
     st.write("The predicted winner of each match was correct " + str(predicted_correctly) + "% of the time.")
-    st.write("We predicted {} matches correctly out of {} matches.".format(predicted_correctly, total_matches))
+    st.write("We predicted {} matches correctly out of {} matches.".format(num_correct, total_matches))
