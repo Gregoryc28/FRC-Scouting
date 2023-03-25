@@ -795,6 +795,34 @@ if data_selector == "Match-Predictions":
 
                 count += 1
                 count += 1
+# Footer
+footer="""<style>
+a:link , a:visited{
+color: blue;
+background-color: transparent;
+text-decoration: underline;
+}
 
+a:hover,  a:active {
+color: red;
+background-color: transparent;
+text-decoration: underline;
+}
+
+.footer {
+position: fixed;
+left: 0;
+bottom: 0;
+width: 100%;
+background-color: #237757;
+color: #f4f5f0;
+text-align: center;
+}
+</style>
+<div class="footer">
+<p>Developed with ❤ by <a style='text-align: center;' href="https://www.longwoodrobotics.com" target="_blank">Longwood Robotics 564</a></p>
+</div>
+"""
+st.markdown(footer,unsafe_allow_html=True)
 
 
