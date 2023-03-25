@@ -821,6 +821,7 @@ text-align: center;
 </style>
 <div class="footer">
 <p>Developed with ❤ by <a style='text-align: center;' href="https://www.longwoodrobotics.com" target="_blank">Longwood Robotics 564</a></p>
+<p><a style='text-align: center;', href="mailto:john.hirdt@longwoodcsd.org" target="_blank">Contact Us<a/a></p>
 </div>
 """
 st.markdown(footer,unsafe_allow_html=True)
