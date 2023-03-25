@@ -1023,4 +1023,10 @@ def match_predictWinner(event_key, match_key):
     red_score = round(red_score)
     blue_score = round(blue_score)
 
-    return winner, red_score, blue_score
+    return winner, red_score, blue_score, red_teams, blue_teams, red_oprs, blue_oprs
+
+def getRealMatchScore(match_key):
+    score_breakdown = get_scoreBreakdown(match_key)
+    red_score = score_breakdown['red']['totalPoints']
+    blue_score = score_breakdown['blue']['totalPoints']
+    return red_score, blue_score
