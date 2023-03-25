@@ -11,12 +11,13 @@ from streamlit_player import st_player
 # Data Visualization
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import pandas as pd
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, returnDefense
 
 year = 2023
         
-event = "FIRST Long Island Regional #1, (2023nyli)"
+event = "FIRST Long Island Regional #2, (2023nyli2)"
 event_key = event[event.index('('):]
 event_key = event_key[1:-1]
 #event_key = "2023nyli1"
@@ -75,11 +76,11 @@ if check_password():
 
     offense_teams = []
     defense_teams = []
-    times_in_defense_list = []
 
     # We will use our defense prediciton algorithm to determine which teams are good at defense and which are good at offense.
 
     for team in team_numbers:
+        times_in_defense_list = []
         matches = competition_match_data(team, event_key)
         for match in matches:
             try:
@@ -106,10 +107,7 @@ if check_password():
         # Get the average time the robot spends in a defense
         average_time_defense = round(sum(times_in_defense_list) / len(times_in_defense_list), 2)
 
-        is_defense = False
-        # Check if the average time the robot spends in a defense is greater than half the length of a match
-        if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 3):
-            is_defense = True
+        is_defense = returnDefense(team, event_key, average_time_defense)
 
         if is_defense:
             defense_teams.append(team)
@@ -138,13 +136,15 @@ if check_password():
         defense_teams_ranked_dprs.append([team, getTeamDPRS(team, event_key)])
         defense_teams_ranked_event_rank.append([team, getTeamRank(team, event_key)])
 
-    defense_teams_ranked_dprs.sort(key=lambda x: x[1])
+    # Higher DPRs is better
+    defense_teams_ranked_dprs.sort(key=lambda x: x[1], reverse=True)
     # Lower team rank is better 
     defense_teams_ranked_event_rank.sort(key=lambda x: x[1])
 
     for team in defense_teams:
         defense_teams_final_rankings.append([team, defense_teams_ranked_dprs.index([team, getTeamDPRS(team, event_key)]) + defense_teams_ranked_event_rank.index([team, getTeamRank(team, event_key)])])
 
+    # Lower final ranking is better
     defense_teams_final_rankings.sort(key=lambda x: x[1])
 
     # Now do the offensive ones.
@@ -152,20 +152,19 @@ if check_password():
     offense_teams_ranked_oprs = []
     offense_teams_ranked_average_match_score = []
     offense_teams_ranked_average_cycles_per_match = []
+    cycles_list = []
     offense_teams_final_rankings = []
 
     for team in offense_teams:
         performance_stats = team_performance(team, event_key)
         avg_match_score = performance_stats[3]
+        team_oprs = getTeamOPRS(team, event_key)
 
         try:
-            offense_teams_ranked_oprs.append([team, getTeamOPRS(team, event_key)])
-        except:
-            offense_teams_ranked_oprs.append([team, 0])
-        try:
+            offense_teams_ranked_oprs.append([team, team_oprs])
             offense_teams_ranked_average_match_score.append([team, avg_match_score])
         except:
-            offense_teams_ranked_average_match_score.append([team, 0])
+            pass
 
         matches = competition_match_data(team, event_key)
         # Sort the matches from earliest to latest
@@ -206,16 +205,26 @@ if check_password():
             total_avg_cycles = 2
 
         offense_teams_ranked_average_cycles_per_match.append([team, total_avg_cycles])
+        cycles_list.append(total_avg_cycles)
 
-    offense_teams_ranked_oprs.sort(key=lambda x: x[1])
+    # Higher OPRs is better
+    offense_teams_ranked_oprs.sort(key=lambda x: x[1], reverse=True)
     # Lower team rank is better
     offense_teams_ranked_average_match_score.sort(key=lambda x: x[1])
     # More cycles is better
     offense_teams_ranked_average_cycles_per_match.sort(key=lambda x: x[1], reverse=True)
+    # sort the cycles list from highest to lowest
+    cycles_list.sort(reverse=True)
 
+    countCycles = 0
     for team in offense_teams:
+        team_oprs = getTeamOPRS(team, event_key)
+        performance_stats = team_performance(team, event_key)
+        avg_match_score = performance_stats[3]
+        average_cycles = cycles_list[countCycles]
         try:
-            offense_teams_final_rankings.append([team, offense_teams_ranked_oprs.index([team, getTeamOPRS(team, event_key)]) + offense_teams_ranked_average_match_score.index([team, avg_match_score]) + offense_teams_ranked_average_cycles_per_match.index([team, total_avg_cycles])])
+            offense_teams_final_rankings.append([team, offense_teams_ranked_oprs.index([team, team_oprs]) + offense_teams_ranked_average_match_score.index([team, avg_match_score]) + cycles_list.index(average_cycles)])
+            countCycles += 1
         except:
             pass
 
@@ -224,12 +233,12 @@ if check_password():
     # Now that we have the rankings, we can display them.
 
     st.write('Defense Teams:')
-    for team in defense_teams_final_rankings:
-        st.write(team[0])
+    # Display the rankings nicely
+    defense_teams_final_rankings_df = pd.DataFrame(defense_teams_final_rankings, columns=['Team', 'Rank'])
+    st.table(defense_teams_final_rankings_df)
+    # Highlight the teams in green and then slowly gradient lighter and lighter
+
 
     st.write('Offense Teams:')
-    for team in offense_teams_final_rankings:
-        st.write(team[0])
-
-    
-
+    offense_teams_final_rankings_df = pd.DataFrame(offense_teams_final_rankings, columns=['Team', 'Rank'])
+    st.table(offense_teams_final_rankings_df)

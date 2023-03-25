@@ -854,6 +854,7 @@ def getChargeConsistency(position, match_key, alliance, times, xData, yData):
     auto_charged = False
     teleop_type_charge = 'None'
     auto_type_charge = 'None'
+    total_charge_points = 0
 
     for i in range(len(times)):
         if alliance == 'red':
@@ -877,7 +878,6 @@ def getChargeConsistency(position, match_key, alliance, times, xData, yData):
             if teleop_attempted_charge or auto_attempted_charge:
                 match_info = getTBA("match/" + match_key)
                 score_breakdown = match_info["score_breakdown"]
-                print(match_info)
                 print(score_breakdown)
                 charging = score_breakdown['red'][f"endGameChargeStationRobot{position}"]
                 if charging == "Docked" or charging == "Engaged":
@@ -956,15 +956,23 @@ def returnDefense(team, event_key, average_time_defense):
     likely_defense = False
     very_defense = False
     # Check if the average time the robot spends in a defense is greater than half the length of a match
-    if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 3) and ccwm < 0:
+    if (average_time_defense > ((150 - 150 * .1)) / 3) and ccwm < 0:
         likely_defense = True
         # Check if the team spends more than 1/2 of the match in a defense
-        if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 2):
+        if average_time_defense > ((150 - (150 * .1)) / 2):
             very_defense = True
     if likely_defense == False and very_defense == False and getTeamCCWM(team, event_key) < 0:
         could_defense = True
 
-    if could_defense == True or likely_defense == True or very_defense == True:
+    if likely_defense == True or very_defense == True:
         return True
     else:
         return False
+
+def get_scoreBreakdown(match_key):
+    try:
+        match_info = getTBA("match/" + match_key)
+        score_breakdown = match_info["score_breakdown"]
+        return score_breakdown
+    except:
+        return None
