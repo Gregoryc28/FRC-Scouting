@@ -117,6 +117,8 @@ if data_selector == "Team-Performance-Stats":
                         st.metric(label="Match Score", value=match_score, delta=f"{-round(avg_match_score - match_score, 2)}% Below the teams average match score")
                 count += 1
 
+        # Add a streamlit info box to the bottom of the page mentioning that the data is provided by Longwood Robotics Team 564
+        st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
 
 if data_selector == "Match-Videos":
     with st.spinner(f"The videos for team {team} are loading!"):
@@ -139,6 +141,9 @@ if data_selector == "Match-Videos":
                     st_player(f"https://youtu.be/{video}")
                 except:
                     pass
+
+        # Add a streamlit info box to the bottom of the page mentioning that the data is provided by Longwood Robotics Team 564
+        st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
 
 if data_selector == "Cycle-Data":
     with st.spinner("Your data is loading!"):
@@ -270,6 +275,9 @@ if data_selector == "Cycle-Data":
 
         st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
 
+        # Add an info box to give credit
+        st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
+
 if data_selector == "Robot-Stats":
     # The first robot statistic will be the average speed of the robot.
     # To get the average speed we will use the zebra_speed function
@@ -376,6 +384,9 @@ if data_selector == "Robot-Stats":
     st.plotly_chart(fig)
 
     st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
+
+    # Add an info box to give credit
+    st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
 
 if data_selector == "Charge-Data":
 
@@ -508,6 +519,9 @@ if data_selector == "Charge-Data":
 
             st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
     
+        # Add an info box to give credit
+        st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
+
 if data_selector == "Event-Stats":
     # Display the event statistics.
     st.title(f"Event Statistics for {event_key}")
@@ -587,6 +601,9 @@ if data_selector == "Event-Stats":
         # Get rid of margins
         plotly_fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
         st.plotly_chart(plotly_fig)
+
+    # Add an info box to give credit
+    st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
 
 if data_selector == "Match-Predictions":
     # Display the match predictions.
@@ -679,3 +696,6 @@ if data_selector == "Match-Predictions":
                 st.warning("The match predictions are not a guarantee and are only predictions based on the data available.", icon="⚠️")
 
                 count += 1
+
+        # Add an info box to give credit
+        st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
