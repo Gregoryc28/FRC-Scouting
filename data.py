@@ -645,6 +645,9 @@ def average_speed(times, xData, yData):
     # Then use the zebra_speeds function to get the speeds
     try:
         speeds = zebra_speed(times, xData, yData)
+        for speed in speeds:
+            if speed > 20:
+                speeds.remove(speed)
         avg_speed = sum(speeds) / len(speeds)
         return avg_speed
     except:
@@ -945,3 +948,23 @@ def determineDefense(team, event_key, alliance, times, xData, yData):
                 time_in_zone += 1
 
     return time_in_zone
+
+# Utilize the determine defense function and the getTeamCCWM function to determine if a team is mostly defense or offense
+def returnDefense(team, event_key, average_time_defense):
+    ccwm = getTeamCCWM(team, event_key)
+    could_defense = False
+    likely_defense = False
+    very_defense = False
+    # Check if the average time the robot spends in a defense is greater than half the length of a match
+    if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 3) and ccwm < 0:
+        likely_defense = True
+        # Check if the team spends more than 1/2 of the match in a defense
+        if average_time_defense > ((len(times)/10 - (len(times)/10 * .1)) / 2):
+            very_defense = True
+    if likely_defense == False and very_defense == False and getTeamCCWM(team, event_key) < 0:
+        could_defense = True
+
+    if could_defense == True or likely_defense == True or very_defense == True:
+        return True
+    else:
+        return False
