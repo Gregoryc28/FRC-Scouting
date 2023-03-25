@@ -13,7 +13,8 @@ from bs4 import BeautifulSoup
 import logging
 import shutil
 
-# Google Analytics
+# Google
+# Google Anayltics
 def inject_ga():
     GA_ID = "google_analytics"
 
@@ -41,9 +42,26 @@ def inject_ga():
         html = str(soup)
         new_html = html.replace('<head>', '<head>\n' + GA_JS)
         index_path.write_text(new_html)
-
-
 inject_ga()
+
+# Google Search Console
+def inject_sc():
+    google-site-verification = """
+    Kra44JlImxUgtJj2H5j8ve6rlhiOR4Qk_niedct47-E
+    """
+    index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
+    logging.info(f'editing {index_path}')
+    soup = BeautifulSoup(index_path.read_text(), features="html.parser")
+    if not soup.find(id=GA_ID):
+        bck_index = index_path.with_suffix('.bck')
+        if bck_index.exists():
+            shutil.copy(bck_index, index_path)
+        else:
+            shutil.copy(index_path, bck_index)
+        html = str(soup)
+        new_html = html.replace('<head>', '<head>\n' + GA_JS)
+        index_path.write_text(new_html)
+inject_sc()
 
 # Data Visualization
 from plotly.subplots import make_subplots
