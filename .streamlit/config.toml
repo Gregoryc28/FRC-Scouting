@@ -13,9 +13,7 @@ caching = true
 showErrorDetails = false
 
 [server]
-# Symmetric key used to produce signed cookies. If deploying on multiple replicas, this should be set to the same value across all replicas to ensure they all share the same secret.
-# Default: randomly generated secret key.
-cookieSecret =fsdfspdfjsadfohasdifhdnsfoaisfhawofasdfiasfd
+
 runOnSave = true
 
 # dark mode is cool :)
