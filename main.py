@@ -44,25 +44,6 @@ def inject_ga():
         index_path.write_text(new_html)
 inject_ga()
 
-# Google Search Console
-def inject_sc():
-    google-site-verification = """
-    Kra44JlImxUgtJj2H5j8ve6rlhiOR4Qk_niedct47-E
-    """
-    index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
-    logging.info(f'editing {index_path}')
-    soup = BeautifulSoup(index_path.read_text(), features="html.parser")
-    if not soup.find(id=GA_ID):
-        bck_index = index_path.with_suffix('.bck')
-        if bck_index.exists():
-            shutil.copy(bck_index, index_path)
-        else:
-            shutil.copy(index_path, bck_index)
-        html = str(soup)
-        new_html = html.replace('<head>', '<head>\n' + GA_JS)
-        index_path.write_text(new_html)
-inject_sc()
-
 # Data Visualization
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -756,12 +737,7 @@ if data_selector == "Match-Predictions":
         for tab in st.tabs(tab_labels):
             with tab:
                 # Get the match predictions for the match using the match_predictWinner function
-<<<<<<< HEAD
                 match_predictions = match_predictWinner(event_key, matches[count][5])
-=======
-                match_predictions = match_predictWinner(
-                    event_key, working_matches[count][5])
->>>>>>> refs/remotes/origin/main
                 winner = match_predictions[0]
                 red_score = match_predictions[1]
                 blue_score = match_predictions[2]
@@ -785,7 +761,6 @@ if data_selector == "Match-Predictions":
                 st.write(
                     f"Predicted Match Score: \n:red[**{red_score}**] - :blue[**{blue_score}**]")
 
-<<<<<<< HEAD
                 # Check if the team is on the predicted winner
                 if winner == team_alliance:
                     st.success(f":white_check_mark: Team {team} is on the predicted winners alliance!")
@@ -819,7 +794,6 @@ if data_selector == "Match-Predictions":
                 st.warning("The match predictions are not a guarantee and are only predictions based on the data available.", icon="⚠️")
 
                 count += 1
-=======
                 count += 1
 
 # Google Analytics
@@ -856,4 +830,3 @@ def inject_ga():
 
 
 inject_ga()
->>>>>>> refs/remotes/origin/main
