@@ -71,48 +71,18 @@ def check_password():
         return True
 
 if check_password():
-    # We are going to create an algorithm that allows us to determine a leaderboard of the teams we would select if we are choosing our alliance.
-    # One list will be for offensive robots, and one will be for defensive robots.
+    # # We are going to create an algorithm that allows us to determine a leaderboard of the teams we would select if we are choosing our alliance.
+    # # One list will be for offensive robots, and one will be for defensive robots.
 
     offense_teams = []
     defense_teams = []
 
-    # We will use our defense prediciton algorithm to determine which teams are good at defense and which are good at offense.
+    # # We will use our defense prediciton algorithm to determine which teams are good at defense and which are good at offense.
 
     for team in team_numbers:
-        times_in_defense_list = []
-        matches = competition_match_data(team, event_key)
-        for match in matches:
-            try:
-                # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
-                if match[4] == 'qm':
-                    match_type = 'Qualification'
-                    times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
-                elif 'qf' in match[4]:
-                    match_type = 'Quarterfinal'
-                    times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
-                elif 'sf' in match[4]:
-                    match_type = 'Semifinal'
-                    times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
-                elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
-                    match_type = 'Final'
-                    times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
-
-                time_defense = determineDefense(team, event_key, match[2], times, xData, yData)
-                times_in_defense_list.append(time_defense)
-
-            except:
-                pass
-
-        # Get the average time the robot spends in a defense
-        average_time_defense = round(sum(times_in_defense_list) / len(times_in_defense_list), 2)
-
-        is_defense = returnDefense(team, event_key, average_time_defense)
-
-        if is_defense:
-            defense_teams.append(team)
-        else:
-            offense_teams.append(team)
+        
+        defense_teams.append(team)
+        offense_teams.append(team)
 
     # Now that we have which teams are offense and which are defense, we can do the following.
     # For defense: 
@@ -134,111 +104,108 @@ if check_password():
 
     for team in defense_teams:
         defense_teams_ranked_dprs.append([team, getTeamDPRS(team, event_key)])
-        defense_teams_ranked_event_rank.append([team, getTeamRank(team, event_key)])
 
     # Higher DPRs is better
     defense_teams_ranked_dprs.sort(key=lambda x: x[1], reverse=True)
-    # Lower team rank is better 
-    defense_teams_ranked_event_rank.sort(key=lambda x: x[1])
 
-    for team in defense_teams:
-        defense_teams_final_rankings.append([team, defense_teams_ranked_dprs.index([team, getTeamDPRS(team, event_key)]) + defense_teams_ranked_event_rank.index([team, getTeamRank(team, event_key)])])
-
-    # Lower final ranking is better
-    defense_teams_final_rankings.sort(key=lambda x: x[1])
-
-    # Now do the offensive ones.
+    # # Now do the offensive ones.
 
     offense_teams_ranked_oprs = []
-    offense_teams_ranked_average_match_score = []
-    offense_teams_ranked_average_cycles_per_match = []
-    cycles_list = []
-    offense_teams_final_rankings = []
+    # offense_teams_ranked_average_match_score = []
+    # offense_teams_ranked_average_cycles_per_match = []
+    # cycles_list = []
+    # offense_teams_final_rankings = []
 
     for team in offense_teams:
-        performance_stats = team_performance(team, event_key)
-        avg_match_score = performance_stats[3]
         team_oprs = getTeamOPRS(team, event_key)
+        offense_teams_ranked_oprs.append([team, team_oprs])
 
-        try:
-            offense_teams_ranked_oprs.append([team, team_oprs])
-            offense_teams_ranked_average_match_score.append([team, avg_match_score])
-        except:
-            pass
+    st.write("LISTS")
 
-        matches = competition_match_data(team, event_key)
-        # Sort the matches from earliest to latest
-        matches.sort(key=lambda x: x[1])
+    # Display pandas dataframes for the rankings (One for offense and one for defense)
+    offense_teams_ranked_oprs_df = pd.DataFrame(offense_teams_ranked_oprs, columns=['Team', 'OPRs'])
+    offense_teams_ranked_oprs_df = offense_teams_ranked_oprs_df.set_index('Team')
+    offense_teams_ranked_oprs_df = offense_teams_ranked_oprs_df.sort_values(by=['OPRs'], ascending=False)
+    st.table(offense_teams_ranked_oprs_df)
+
+    defense_teams_ranked_dprs_df = pd.DataFrame(defense_teams_ranked_dprs, columns=['Team', 'DPRs'])
+    defense_teams_ranked_dprs_df = defense_teams_ranked_dprs_df.set_index('Team')
+    defense_teams_ranked_dprs_df = defense_teams_ranked_dprs_df.sort_values(by=['DPRs'], ascending=False)
+    st.table(defense_teams_ranked_dprs_df)
+
+    #     matches = competition_match_data(team, event_key)
+    #     # Sort the matches from earliest to latest
+    #     matches.sort(key=lambda x: x[1])
         
-        num_cycles_list = []
+    #     num_cycles_list = []
         
-        try:
-            for match in matches:
-                try:
-                    # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
-                    if match[4] == 'qm':
-                        match_type = 'Qualification'
-                        times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
-                    elif 'qf' in match[4]:
-                        match_type = 'Quarterfinal'
-                        times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
-                    elif 'sf' in match[4]:
-                        match_type = 'Semifinal'
-                        times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
-                    elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
-                        match_type = 'Final'
-                        times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
+    #     try:
+    #         for match in matches:
+    #             try:
+    #                 # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
+    #                 if match[4] == 'qm':
+    #                     match_type = 'Qualification'
+    #                     times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
+    #                 elif 'qf' in match[4]:
+    #                     match_type = 'Quarterfinal'
+    #                     times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
+    #                 elif 'sf' in match[4]:
+    #                     match_type = 'Semifinal'
+    #                     times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
+    #                 elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
+    #                     match_type = 'Final'
+    #                     times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
         
-                    match_key = str(match[5])
-                    cycle_data = get_cycleData(match_key, match[2], times, xData, yData)
-                    num_cycles_list.append(cycle_data[1])
+    #                 match_key = str(match[5])
+    #                 cycle_data = get_cycleData(match_key, match[2], times, xData, yData)
+    #                 num_cycles_list.append(cycle_data[1])
 
-                except:
-                    pass
+    #             except:
+    #                 pass
 
-            try:
-                total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
-            except:
-                total_avg_cycles = 2
+    #         try:
+    #             total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
+    #         except:
+    #             total_avg_cycles = 2
 
-        except:
-            total_avg_cycles = 2
+    #     except:
+    #         total_avg_cycles = 2
 
-        offense_teams_ranked_average_cycles_per_match.append([team, total_avg_cycles])
-        cycles_list.append(total_avg_cycles)
+    #     offense_teams_ranked_average_cycles_per_match.append([team, total_avg_cycles])
+    #     cycles_list.append(total_avg_cycles)
 
-    # Higher OPRs is better
-    offense_teams_ranked_oprs.sort(key=lambda x: x[1], reverse=True)
-    # Lower team rank is better
-    offense_teams_ranked_average_match_score.sort(key=lambda x: x[1])
-    # More cycles is better
-    offense_teams_ranked_average_cycles_per_match.sort(key=lambda x: x[1], reverse=True)
-    # sort the cycles list from highest to lowest
-    cycles_list.sort(reverse=True)
+    # # Higher OPRs is better
+    # offense_teams_ranked_oprs.sort(key=lambda x: x[1], reverse=True)
+    # # Lower team rank is better
+    # offense_teams_ranked_average_match_score.sort(key=lambda x: x[1])
+    # # More cycles is better
+    # offense_teams_ranked_average_cycles_per_match.sort(key=lambda x: x[1], reverse=True)
+    # # sort the cycles list from highest to lowest
+    # cycles_list.sort(reverse=True)
 
-    countCycles = 0
-    for team in offense_teams:
-        team_oprs = getTeamOPRS(team, event_key)
-        performance_stats = team_performance(team, event_key)
-        avg_match_score = performance_stats[3]
-        average_cycles = cycles_list[countCycles]
-        try:
-            offense_teams_final_rankings.append([team, offense_teams_ranked_oprs.index([team, team_oprs]) + offense_teams_ranked_average_match_score.index([team, avg_match_score]) + cycles_list.index(average_cycles)])
-            countCycles += 1
-        except:
-            pass
+    # countCycles = 0
+    # for team in offense_teams:
+    #     team_oprs = getTeamOPRS(team, event_key)
+    #     performance_stats = team_performance(team, event_key)
+    #     avg_match_score = performance_stats[3]
+    #     average_cycles = cycles_list[countCycles]
+    #     try:
+    #         offense_teams_final_rankings.append([team, offense_teams_ranked_oprs.index([team, team_oprs]) + offense_teams_ranked_average_match_score.index([team, avg_match_score]) + cycles_list.index(average_cycles)])
+    #         countCycles += 1
+    #     except:
+    #         pass
 
-    offense_teams_final_rankings.sort(key=lambda x: x[1])
+    # offense_teams_final_rankings.sort(key=lambda x: x[1])
 
-    # Now that we have the rankings, we can display them.
+    # # Now that we have the rankings, we can display them.
 
-    st.write('Defense Teams:')
-    # Display the rankings nicely
-    defense_teams_final_rankings_df = pd.DataFrame(defense_teams_final_rankings, columns=['Team', 'Rank'])
-    st.table(defense_teams_final_rankings_df)
-    # Highlight the teams in green and then slowly gradient lighter and lighter
+    # st.write('Defense Teams:')
+    # # Display the rankings nicely
+    # defense_teams_final_rankings_df = pd.DataFrame(defense_teams_final_rankings, columns=['Team', 'Rank'])
+    # st.table(defense_teams_final_rankings_df)
+    # # Highlight the teams in green and then slowly gradient lighter and lighter
 
 
-    st.write('Offense Teams:')
-    offense_teams_final_rankings_df = pd.DataFrame(offense_teams_final_rankings, columns=['Team', 'Rank'])
-    st.table(offense_teams_final_rankings_df)
+    # st.write('Offense Teams:')
+    # offense_teams_final_rankings_df = pd.DataFrame(offense_teams_final_rankings, columns=['Team', 'Rank'])
+    # st.table(offense_teams_final_rankings_df)
