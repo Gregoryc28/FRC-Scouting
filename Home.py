@@ -13,6 +13,10 @@ from bs4 import BeautifulSoup
 import logging
 import shutil
 
+# Set the Page Title
+st.set_page_config(page_title="FRC Scouting", page_icon=None, layout="centered", initial_sidebar_state="auto", menu_items=None)
+
+
 # Google
 # Google Anayltics
 def inject_ga():
@@ -795,6 +799,29 @@ if data_selector == "Match-Predictions":
 
                 count += 1
                 count += 1
+# Add our logo
+def add_logo():
+    st.markdown(
+        """
+        <style>
+            [data-testid="stSidebarNav"] {
+                background-image: "https://pbs.twimg.com/profile_images/2166064519/longwoodroboticslion_400x400.jpg";
+                background-repeat: no-repeat;
+                padding-top: 120px;
+                background-position: 20px 20px;
+            }
+            [data-testid="stSidebarNav"]::before {
+                content: "Longwood Robotics Scouting";
+                margin-left: 20px;
+                margin-top: 20px;
+                font-size: 30px;
+                position: relative;
+                top: 100px;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 # Footer
 footer="""<style>
 a:link , a:visited{
@@ -820,8 +847,7 @@ text-align: center;
 }
 </style>
 <div class="footer">
-<p>Developed with ❤ by <a style='text-align: center;' href="https://www.longwoodrobotics.com" target="_blank">Longwood Robotics 564</a></p>
-<p><a style='text-align: center;', href="mailto:john.hirdt@longwoodcsd.org" target="_blank">Contact Us<a/a></p>
+<p>Developed with ❤ by <a style='text-align: right;' href="https://www.longwoodrobotics.com" target="_blank">Longwood Robotics 564</a> | <a style='text-align: right;' href="mailto:john.hirdt@longwoodcsd.org" target="_blank">Contact Us</a></p>
 </div>
 """
 st.markdown(footer,unsafe_allow_html=True)
