@@ -10,7 +10,7 @@ from streamlit_player import st_player
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown
 
 #team = 564
 teams = [564, 870, 263, 514, 527, 694]
@@ -186,8 +186,7 @@ if data_selector == "Cycle-Data":
                 total_avg_distance = round(sum(distance_travelled_list) / len(distance_travelled_list), 2)
                 total_avg_cycles = round(sum(num_cycles_list) / len(num_cycles_list), 2)
                 total_avg_time_cycle = round(sum(avg_time_cross_list) / len(avg_time_cross_list), 2)
-            except Exception as e:
-                print(e)
+            except:
                 st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
                 display = False
                 
@@ -214,10 +213,19 @@ if data_selector == "Cycle-Data":
         matches.sort(key=lambda x: x[1])
         for match in matches:
             match_numbers.append(match[1])
-            
+
+        working_matches = []
+        for match in matches:
+            if get_scoreBreakdown(match[5]) != None:
+                working_matches.append(match)
+
+        working_numbers = []
+        for match in working_matches:
+            working_numbers.append(match[1])
+
         comp_count = 0
         tab_labels = []
-        for match in match_numbers:
+        for match in working_numbers:
             label = f"{comp_levels[comp_count].upper()} Match {match}"
             tab_labels.append(label)
             comp_count += 1
