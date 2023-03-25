@@ -976,3 +976,51 @@ def get_scoreBreakdown(match_key):
         return score_breakdown
     except:
         return None
+
+def match_predictWinner(event_key, match_key):
+    # First get all the teams in the match
+    match_info = getTBA("match/" + match_key)
+    red_teams = match_info["alliances"]["red"]["team_keys"]
+    blue_teams = match_info["alliances"]["blue"]["team_keys"]
+
+    # Format the team keys to only have the numbers.
+    for i in range(len(red_teams)):
+        red_teams[i] = (red_teams[i][3:])
+    for i in range(len(blue_teams)):
+        blue_teams[i] = (blue_teams[i][3:])
+
+    # Get the oprs for each team
+    red_oprs = []
+    blue_oprs = []
+    for team in red_teams:
+        red_oprs.append(getTeamOPRS(team, event_key))
+    for team in blue_teams:
+        blue_oprs.append(getTeamOPRS(team, event_key))
+
+    # Add up the oprs for each team
+    red_opr = 0
+    blue_opr = 0
+    for opr in red_oprs:
+        red_opr += opr
+    for opr in blue_oprs:
+        blue_opr += opr
+
+    # Check which team has the higher opr and set winner to that alliance
+    if red_opr > blue_opr:
+        winner = 'Red Alliance'
+    elif blue_opr > red_opr:
+        winner = 'Blue Alliance'
+
+    # Predict the score from each alliance 
+    red_score = 0
+    blue_score = 0
+    for i in range(len(red_oprs)):
+        red_score += red_oprs[i]
+    for i in range(len(blue_oprs)):
+        blue_score += blue_oprs[i]
+
+    # Round the scores
+    red_score = round(red_score)
+    blue_score = round(blue_score)
+
+    return winner, red_score, blue_score
