@@ -1,12 +1,3 @@
-## Ew remove this gross green background and replace it was dark mode - Ryan
-#[theme]
-#primaryColor="#91fdb9"
-#backgroundColor="#c8fedc"
-#secondaryBackgroundColor="#477d28"
-#textColor="#d4af37"
-
-
-# dark mode is cool :)
 [theme]
 
 # Primary accent for interactive elements
