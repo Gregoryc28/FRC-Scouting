@@ -1034,3 +1034,83 @@ def getRealMatchScore(match_key):
     red_score = score_breakdown['red']['totalPoints']
     blue_score = score_breakdown['blue']['totalPoints']
     return red_score, blue_score
+
+def distanceFivePointMovingAverage(xData, yData):
+    distanceWindows = []
+    for i in range(5):
+        distanceWindows.append(-7777)
+
+    # distances = []
+    # for i in range(len(xData)):
+    #     distances.append(math.sqrt(xData[i]**2 + yData[i]**2))
+
+    # Those were not real distances... To find distance we need two points, not just one set
+    distances = []
+    for i in range(len(xData) - 1):
+        distances.append(math.sqrt((xData[i + 1] - xData[i])**2 + (yData[i + 1] - yData[i])**2))
+
+
+    first_five_average = 0
+    for i in range(5):
+        first_five_average += distances[i]
+    first_five_average = first_five_average / 5
+
+    distanceWindows.append(first_five_average)
+
+    # Starting_point 1 is really the second point in the list and ending point 5 is really the 6th point in the list
+    starting_point = 1
+    ending_point = 5
+
+    while ending_point < len(distances):
+        next_five_window = 0
+        for i in range(starting_point, ending_point + 1):
+            next_five_window += distances[i]
+        next_five_window = next_five_window / 5
+        distanceWindows.append(next_five_window)
+        starting_point += 1
+        ending_point += 1
+
+    return distanceWindows
+
+# Create a method to calculate the total distance traveled by a robot using a five point moving average
+def totalDistanceTraveled(xData, yData):
+    distanceWindows = distanceFivePointMovingAverage(xData, yData)
+    distanceWindows = [0 if x == -7777 else x for x in distanceWindows]
+    total_distance = 0
+    for i in range(len(distanceWindows)):
+        total_distance += distanceWindows[i]
+    return total_distance
+
+# Create a method to calculate the average speed of a robot using a five point moving average
+def fivePointAverageVelocity(xData, yData, times):
+    # Calculate the total distance traveled over a 5 point moving window
+    distanceWindows = distanceFivePointMovingAverage(xData, yData)
+
+    time_passed = 0.5
+
+    distanceWindows = [0 if x == -7777 else x for x in distanceWindows]
+
+    # Loop through the distanceWindows list and using a 5 point moving window, calculate the average velocity by adding the next 5 distances and dividing by time_passed
+    average_velocity = []
+    for i in range(len(distanceWindows)):
+        if i < 5:
+            average_velocity.append(-7777)
+        else:
+            average_velocity.append(sum(distanceWindows[i - 5:i]) / time_passed)
+
+    average_velocity = [0 if x == -7777 else x for x in average_velocity]
+
+    return average_velocity
+
+# Create a method to calculate that returns the highest average velocity of a robot
+def highestAverageVelocity(xData, yData, times):
+    average_velocity = fivePointAverageVelocity(xData, yData, times)
+
+    highest_velocities = []
+    # Loop through the average_velocity list and append any values to highest_velocities that are greater than 95% of the other values
+    for i in range(len(average_velocity)):
+        if average_velocity[i] > 0.95 * max(average_velocity):
+            highest_velocities.append(average_velocity[i])
+
+    highest_average_velocity = sum(highest_velocities) / len(highest_velocities)
+    return highest_average_velocity

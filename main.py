@@ -17,7 +17,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import pandas as pd
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner, getRealMatchScore
+from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner, getRealMatchScore, distanceFivePointMovingAverage, highestAverageVelocity, totalDistanceTraveled, fivePointAverageVelocity  
 
 # Google Analytics
 
@@ -93,7 +93,7 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Team-Performance-Stats", "Charge-Data", "Robot-Stats", "Cycle-Data", "Match-Videos", "Event-Stats", "Match-Predictions"]
+data_selection_choices = ["Team-Performance-Stats", "Charge-Data", "Motion-Stats", "Robot-Stats", "Cycle-Data", "Match-Videos", "Event-Stats", "Match-Predictions"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 
@@ -280,13 +280,16 @@ if data_selector == "Cycle-Data":
         # Create a streamlit tab selector for the user to select the match and then view the match score for that match as well as a st.metric representing the percent above or below the average match score
         for tab in st.tabs(tab_labels):
             with tab:
-                # Display the average distance travelled for this match
-                st.metric(label="Average Distance Travelled", value=f"{round(distance_travelled_list[count], 2)} feet", delta=f"{-1 * round((distance_travelled_list[count] - total_avg_distance), 2)} feet")
-                # Display the average number of cycles for this match
-                st.metric(label="Average Number of Cycles", value=f"{num_cycles_list[count]} cycles", delta=f"{round((num_cycles_list[count] - total_avg_cycles), 2)} cycles")
-                # Display the average time to complete a cycle for this match
-                st.metric(label="Average Time to Complete a Cycle", value=f"{round(avg_time_cross_list[count], 2)} seconds", delta=f"{-1 * round((avg_time_cross_list[count] - total_avg_time_cycle), 2)} seconds")
-                count += 1
+                try:
+                    # Display the average distance travelled for this match
+                    st.metric(label="Average Distance Travelled", value=f"{round(distance_travelled_list[count], 2)} feet", delta=f"{-1 * round((distance_travelled_list[count] - total_avg_distance), 2)} feet")
+                    # Display the average number of cycles for this match
+                    st.metric(label="Average Number of Cycles", value=f"{num_cycles_list[count]} cycles", delta=f"{round((num_cycles_list[count] - total_avg_cycles), 2)} cycles")
+                    # Display the average time to complete a cycle for this match
+                    st.metric(label="Average Time to Complete a Cycle", value=f"{round(avg_time_cross_list[count], 2)} seconds", delta=f"{-1 * round((avg_time_cross_list[count] - total_avg_time_cycle), 2)} seconds")
+                    count += 1
+                except:
+                    st.warning("It appears that distance travelled data for this match is not currently working. Please try again later.", icon="⚠️")
 
         # Display a fancy plotly graph to analyze the data
         #fig = go.Figure()
@@ -739,3 +742,83 @@ if data_selector == "Match-Predictions":
 
         # Add an info box to give credit
         st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
+
+if data_selector == "Motion-Stats":
+
+    matches = competition_match_data(team, event_key)
+    # Sort the matches from earliest to latest
+    matches.sort(key=lambda x: x[1])
+
+    # Create tabs for all the matches for the team
+    comp_levels = []
+    for match in matches:
+        comp_levels.append(match[4])
+
+    match_numbers = []
+    matches = competition_match_data(team, event_key)
+    # Sort the matches from earliest to latest
+    matches.sort(key=lambda x: x[1])
+    for match in matches:
+        match_numbers.append(match[1])
+
+    comp_count = 0
+    tab_labels = []
+    for match in match_numbers:
+        label = f"{comp_levels[comp_count].upper()} Match {match}"
+        tab_labels.append(label)
+        comp_count += 1
+
+    count = 0
+    match_count = 0
+    for tab in st.tabs(tab_labels):
+        with tab:
+
+            matches = competition_match_data(team, event_key)
+            # Sort the matches from earliest to latest
+            matches.sort(key=lambda x: x[1])
+            match = matches[match_count]
+
+            try: 
+                # Check if the match is a qualification match (qm), quarterfinal (qf), semifinal (sf), or final (f)
+                if match[4] == 'qm':
+                    match_type = 'Qualification'
+                    times, xData, yData = zebra_data_pull(match[0], match[1], match[2], match[3])
+                elif 'qf' in match[4]:
+                    match_type = 'Quarterfinal'
+                    times, xData, yData = zebra_data_quarterfinals_pull(match[0], match[1], match[2], match[3], match[4])
+                elif 'sf' in match[4]:
+                    match_type = 'Semifinal'
+                    times, xData, yData = zebra_data_semifinals_pull(match[0], match[1], match[2], match[3], match[4])
+                elif 'f' in match[4] and 'qf' not in match[4] and 'sf' not in match[4]:
+                    match_type = 'Final'
+                    times, xData, yData = zebra_data_finals_pull(match[0], match[1], match[2], match[3], match[4])
+
+                average_distances = distanceFivePointMovingAverage(xData, yData)
+                total_distance = totalDistanceTraveled(xData, yData)
+                average_velocities = fivePointAverageVelocity(xData, yData, times)
+                max_average_velocity = highestAverageVelocity(xData, yData, times)
+                # Check for any values -7777 and replace them with 0
+                average_distances = [0 if x == -7777 else x for x in average_distances]
+
+                # Plot the average distance and average velocity over time
+                fig = plt.figure()
+                plt.plot(times, average_distances, label='Average Distance')
+                plt.plot(times, average_velocities, label='Average Velocity')
+                plt.xlabel('Time (s)')
+                plt.ylabel('Distance (ft) and Velocity (ft/s)')
+                plt.title(f'{match_type} Match {match[1]} Distance and Velocity Over Time')
+                plt.grid(True)
+                plt.legend()
+                st.pyplot(fig)
+
+                # Write the total distance traveled and the highest average velocity
+                st.write(f"Total Distance Traveled: {round(total_distance ,2)} feet")
+                st.write(f"Highest Average Velocity: {round(max_average_velocity, 2)} feet/second")
+
+            except Exception as e:
+                st.error(f"Something went wrong! It is possible that motionworks data for this match was not collected properly!")
+
+            match_count += 1
+
+    # Add an info box to give credit
+    st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
