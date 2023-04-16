@@ -500,8 +500,6 @@ if data_selector == "Charge-Data":
         total_successful_teleop_charges_num = 0
         total_attempted_autonomous_charges_num = 0
         total_successful_autonomous_charges_num = 0
-        total_engaged_charges_num = 0
-        total_docked_charge_num = 0
 
         for charge in teleop_attempted_charges:
             if charge == True:
@@ -515,16 +513,6 @@ if data_selector == "Charge-Data":
         for charge in autonomous_successful_charges:
             if charge == True:
                 total_successful_autonomous_charges_num += 1
-        for charge in teleop_charge_types:
-            if charge == 'Engaged':
-                total_engaged_charges_num += 1
-            elif charge == 'Docked':
-                total_docked_charge_num += 1
-        for charge in autonomous_charge_types:
-            if charge == 'Engaged':
-                total_engaged_charges_num += 1
-            elif charge == 'Docked':
-                total_docked_charge_num += 1
 
         check_for_data = True
 
@@ -537,28 +525,29 @@ if data_selector == "Charge-Data":
         if check_for_data:
             st.title(f"Charge Data for Team {team}")
 
-            teleop_charge_success_rate = (total_successful_teleop_charges_num / total_attempted_teleop_charges_num) * 100
-            autonomous_charge_success_rate = (total_successful_autonomous_charges_num / total_attempted_autonomous_charges_num) * 100
+            teleop_charge_success_rate = round((total_successful_teleop_charges_num / total_attempted_teleop_charges_num) * 100, 2)
+            autonomous_charge_success_rate = round((total_successful_autonomous_charges_num / total_attempted_autonomous_charges_num) * 100, 2)
 
             st.write(f"**Teleop Charge Success Rate:** {teleop_charge_success_rate} %")
             st.write(f"**Autonomous Charge Success Rate:** {autonomous_charge_success_rate} %")
 
-            engaged_rate = (total_engaged_charges_num / (total_engaged_charges_num + total_docked_charge_num)) * 100
+            # Display a chart representing teleop charge success rate, autonomous charge success rate
+            #fig = go.Figure(data=[go.Pie(labels=['Teleop Charge Success Rate', 'Autonomous Charge Success Rate'], values=[teleop_charge_success_rate, autonomous_charge_success_rate])])
+            #fig.update_layout(title=f"Team {team}'s Charge Success Rate")
+            #st.plotly_chart(fig)
 
-            st.write(f"**Engaged Charge Rate:** {engaged_rate} %")
-
-            # Display a chart representing teleop charge success rate, autonomous charge success rate, and engaged charge rate
-            fig = go.Figure(data=[go.Pie(labels=['Teleop Charge Success Rate', 'Autonomous Charge Success Rate', 'Engaged Charge Rate'], values=[teleop_charge_success_rate, autonomous_charge_success_rate, engaged_rate])])
-            fig.update_layout(title=f"Team {team}'s Charge Success Rate")
+            # Display a chart representing the total number of attempted charges in either teleop or autonomous and the total number of successful charges in either teleop or autonomous
+            total_charge_successes = total_successful_teleop_charges_num + total_successful_autonomous_charges_num
+            total_charge_attempts = total_attempted_teleop_charges_num + total_attempted_autonomous_charges_num
+            total_charge_success_rate = round((total_charge_successes / total_charge_attempts) * 100, 2)
+            fig = go.Figure(data=[go.Pie(labels=['Total Charge Success Rate', 'Total Charge Failure Rate'], values=[total_charge_success_rate, 100 - total_charge_success_rate])])
+            fig.update_layout(title=f"Team {team}'s Total Charge Success Rate")
             st.plotly_chart(fig)
 
             st.write(f"**Total Attempted Teleop Charges:** {total_attempted_teleop_charges_num}")
             st.write(f"**Total Successful Teleop Charges:** {total_successful_teleop_charges_num}")
             st.write(f"**Total Attempted Autonomous Charges:** {total_attempted_autonomous_charges_num}")
             st.write(f"**Total Successful Autonomous Charges:** {total_successful_autonomous_charges_num}")
-
-            st.write(f"**Total Engaged Charges:** {total_engaged_charges_num}")
-            st.write(f"**Total Docked Charges:** {total_docked_charge_num}")
 
             st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
     
@@ -800,25 +789,116 @@ if data_selector == "Motion-Stats":
                 # Check for any values -7777 and replace them with 0
                 average_distances = [0 if x == -7777 else x for x in average_distances]
 
-                # Plot the average distance and average velocity over time
-                fig = plt.figure()
-                plt.plot(times, average_distances, label='Average Distance')
-                plt.plot(times, average_velocities, label='Average Velocity')
-                plt.xlabel('Time (s)')
-                plt.ylabel('Distance (ft) and Velocity (ft/s)')
-                plt.title(f'{match_type} Match {match[1]} Distance and Velocity Over Time')
-                plt.grid(True)
-                plt.legend()
-                st.pyplot(fig)
-
                 # Write the total distance traveled and the highest average velocity
-                st.write(f"Total Distance Traveled: {round(total_distance ,2)} feet")
-                st.write(f"Highest Average Velocity: {round(max_average_velocity, 2)} feet/second")
+                st.write(f"Total Distance Traveled: :red[**{round(total_distance ,2)}**] feet")
+                st.write(f"Highest Average Velocity: :red[**{round(max_average_velocity, 2)}**] feet/second")
+
+                # We want to create a graph with the following guidelines:
+                # 1. the y-axis is labeled "Cumulative Percent" and ranges from 0 - 100 with a step size of 10
+                # 2. the x-axis is labeled FT / S and ranges from 2.5 to 17.5 with a step size of .5
+                # 3. the graph is titled "% of Measurments at or below Velocity X, but above 2 ft/s"
+                # 4. The graph is a bar graph
+                # 5. The graph highlights the roughly 90% bar with green, the roughly 95% bar with yellow, and the roughly 99% bar with red
+                # Those are all of the graph requirements. Now we need to create the data for the graph.
+
+                # Create the bins
+                bins = []
+                for i in range(5, 35):
+                    bins.append(i/2)
+
+                # Find the percentage of measurements at or below each velocity correlating to each bin
+                # Regardless of whether a measurement is included in a previous bin, also include it in any other bins it qualifies for
+                # Ex: If a measurement is 3.5 ft/s, it will be included in the 5 ft/s or less bin, the 4 ft/s or less bin, and the 17.5 ft/s or less bin
+                percentages = []
+                for i in range(len(bins)):
+                    count = 0
+                    for j in range(len(average_velocities)):
+                        if average_velocities[j] <= bins[i]:
+                            count += 1
+                    percentages.append((count/len(average_velocities)) * 100)
+
+                # Create a dictionary with the bins as the keys and the percentages as the values
+                data = {'Velocity (ft/s)': bins, 'Cumulative Percent': percentages}
+
+                # Create a dataframe from the dictionary
+                df = pd.DataFrame(data)
+
+                # Error control
+                st.set_option('deprecation.showPyplotGlobalUse', False)
+
+                # Plot the dataframe as a bar graph but make sure we stick to the graph requirements
+
+                # Find the bars closest to 90, 95, and 99 percent and color them accordingly.
+                 
+                # Find the x value of the bar that is closest to 90%
+                ninety_index = 0
+                for i in range(len(df['Cumulative Percent'])):
+                    if df['Cumulative Percent'][i] >= 90:
+                        ninety_index = i
+                        break
+                # Find the x value of the bar that is closest to 95%
+                ninety_five_index = 0
+                for i in range(len(df['Cumulative Percent'])):
+                    if df['Cumulative Percent'][i] >= 95:
+                        ninety_five_index = i
+                        break
+                # Find the x value of the bar that is closest to 99%
+                ninety_nine_index = 0
+                for i in range(len(df['Cumulative Percent'])):
+                    if df['Cumulative Percent'][i] >= 99:
+                        ninety_nine_index = i
+                        break
+                
+                # Create a list of colors
+                colors = []
+                for i in range(len(df['Cumulative Percent'])):
+                    if i == ninety_index:
+                        colors.append('green')
+                    elif i == ninety_five_index:
+                        colors.append('yellow')
+                    elif i == ninety_nine_index:
+                        colors.append('red')
+                    else:
+                        colors.append('blue')
+
+                # Plot the dataframe as a bar graph
+                df.plot.bar(x='Velocity (ft/s)', y='Cumulative Percent', title='% of Measurements at or below Velocity X, but above 2 ft/s', color=colors, ylim=(0, 100), yticks=np.arange(0, 101, 10), figsize=(10, 5))
+
+                # Make sure the y-label is "Cumulative Percent" (The y-label was not appearing for some reason)
+                plt.ylabel('Cumulative Percent')
+
+                # Put the title higher so it does not overlap with our text labels
+                plt.title('% of Measurements at or below Velocity X, but above 2 ft/s', y=1.05)
+
+                # At the bars representing the approximate 90%, 95%, and 99% values, add text labels with the exact percentages above the bars
+                plt.text(ninety_index, df['Cumulative Percent'][ninety_index] + 1, str(round(df['Cumulative Percent'][ninety_index], 2)) + '%', ha='center')
+                plt.text(ninety_five_index, df['Cumulative Percent'][ninety_five_index] + 1, str(round(df['Cumulative Percent'][ninety_five_index], 2)) + '%', ha='center')
+                plt.text(ninety_nine_index, df['Cumulative Percent'][ninety_nine_index] + 1, str(round(df['Cumulative Percent'][ninety_nine_index], 2)) + '%', ha='center')
+
+                # Remove the legend
+                plt.legend().remove()
+                # Add horizontal grid lines only
+                plt.grid(b=True, which='major', axis='y', color='grey', linestyle='-', alpha=0.5)
+
+                # Create a line of best fit for the graph
+                line = np.polyfit(df['Velocity (ft/s)'], df['Cumulative Percent'], 1)
+
+                # Plot the line but make sure it is unobtrusive and does not overlap any text by using the -- text style.
+                plt.plot(df['Velocity (ft/s)'], line[0] * df['Velocity (ft/s)'] + line[1], color='black', linestyle='--', linewidth=1)
+
+                # Add text labels to the line of best fit
+                plt.text(0, 99, 'Acceleration: ' + str(round(line[0], 2)) + ' ft/s^2', ha='left', va='top')
+
+                st.pyplot()
+                    
 
             except Exception as e:
                 st.error(f"Something went wrong! It is possible that MotionWorks data for this match was not collected properly!")
 
             match_count += 1
+
+    # Add a warning mentioning that the data is generated using MotionWorks data
+    st.warning("All data shown is obtained from **Zebra MotionWorks** data through TheBlueAlliance API.", icon="⚠️")
 
     # Add an info box to give credit
     st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")

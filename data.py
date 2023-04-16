@@ -882,7 +882,6 @@ def getChargeConsistency(position, match_key, alliance, times, xData, yData):
             if teleop_attempted_charge or auto_attempted_charge:
                 match_info = getTBA("match/" + match_key)
                 score_breakdown = match_info["score_breakdown"]
-                print(score_breakdown)
                 charging = score_breakdown['red'][f"endGameChargeStationRobot{position}"]
                 if charging == "Docked" or charging == "Engaged":
                     teleop_charged = True
