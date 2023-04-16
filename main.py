@@ -238,7 +238,7 @@ if data_selector == "Cycle-Data":
                 
         except Exception as e:
             st.write(e)
-            #st.write("# :red[It appears to be possible that the team you are trying to search for Data for does not participate in using the Zebra Motionworks trackers.]")
+            #st.write("# :red[It appears to be possible that the team you are trying to search for Data for does not participate in using the Zebra MotionWorks trackers.]")
             display = False
 
     if display:
@@ -316,7 +316,7 @@ if data_selector == "Cycle-Data":
         fig.update_xaxes(tickvals=match_nums)
         st.plotly_chart(fig)
 
-        st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
+        st.warning("All data shown is obtained from **Zebra MotionWorks** data through TheBlueAlliance API.", icon="⚠️")
 
         # Add an info box to give credit
         st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
@@ -426,7 +426,7 @@ if data_selector == "Robot-Stats":
     fig.update_layout(title=f"Team {team}'s Average Time in Defense Zones (% of match)")
     st.plotly_chart(fig)
 
-    st.warning("All data shown is obtained from **Zebra Motionworks** data through TheBlueAlliance API.", icon="⚠️")
+    st.warning("All data shown is obtained from **Zebra MotionWorks** data through TheBlueAlliance API.", icon="⚠️")
 
     # Add an info box to give credit
     st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
@@ -816,7 +816,7 @@ if data_selector == "Motion-Stats":
                 st.write(f"Highest Average Velocity: {round(max_average_velocity, 2)} feet/second")
 
             except Exception as e:
-                st.error(f"Something went wrong! It is possible that motionworks data for this match was not collected properly!")
+                st.error(f"Something went wrong! It is possible that MotionWorks data for this match was not collected properly!")
 
             match_count += 1
 

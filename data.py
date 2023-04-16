@@ -1040,10 +1040,6 @@ def distanceFivePointMovingAverage(xData, yData):
     for i in range(5):
         distanceWindows.append(-7777)
 
-    # distances = []
-    # for i in range(len(xData)):
-    #     distances.append(math.sqrt(xData[i]**2 + yData[i]**2))
-
     # Those were not real distances... To find distance we need two points, not just one set
     distances = []
     for i in range(len(xData) - 1):
@@ -1060,13 +1056,30 @@ def distanceFivePointMovingAverage(xData, yData):
     # Starting_point 1 is really the second point in the list and ending point 5 is really the 6th point in the list
     starting_point = 1
     ending_point = 5
+    
+    # while ending_point < len(distances):
+    #     next_five_window = 0
+    #     for i in range(starting_point, ending_point + 1):
+    #         next_five_window += distances[i]
+    #     next_five_window = next_five_window / 5
+    #     distanceWindows.append(next_five_window)
+    #     starting_point += 1
+    #     ending_point += 1
+
+    # Re-written moving average calculation to reduce number of operations occuring.
+    next_five_window = 0
+    for i in range(starting_point, ending_point + 1):
+        next_five_window += distances[i]
+    average_over_window = next_five_window / 5
+    distanceWindows.append(average_over_window)
+    starting_point += 1
+    ending_point += 1
 
     while ending_point < len(distances):
-        next_five_window = 0
-        for i in range(starting_point, ending_point + 1):
-            next_five_window += distances[i]
-        next_five_window = next_five_window / 5
-        distanceWindows.append(next_five_window)
+        average_over_window = 0
+        next_five_window = next_five_window - distances[starting_point - 1] + distances[ending_point]
+        average_over_window = next_five_window / 5
+        distanceWindows.append(average_over_window)
         starting_point += 1
         ending_point += 1
 
