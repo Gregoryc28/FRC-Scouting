@@ -33,6 +33,36 @@ def get_matches(event):
     matches = getTBA(f"event/{event}/matches")
     return matches
 
+def competition_match_data_all(event):
+    # This function returns a list of tuples for all matches
+    # tup format (match#, teams_in_match)
+    lst = []
+    matches = getTBA("event/" + event + "/matches")
+    for match in matches:
+        
+        # Check what type of match it is
+        if match["comp_level"] == "qm":
+            competition_level = "Qualification-Match"
+        elif match["comp_level"] == "qf":
+            competition_level = "Quarter-Final"
+        elif match["comp_level"] == "sf":
+            competition_level = "Semi-Final"
+        elif match["comp_level"] == "f":
+            competition_level = "Final"
+
+        # If the match is a qf, sf, or f, then we need to make sure we add which round it is
+        if competition_level != "Qualification-Match":
+            set_number = match["set_number"]
+            competition_level += f" ({set_number})"
+
+        matchNum = match["match_number"]
+
+        matchNum = competition_level + " " + str(matchNum)
+
+        teams = match["alliances"]["blue"]["team_keys"] + match["alliances"]["red"]["team_keys"]
+        lst.append((matchNum, teams, competition_level, match["match_number"], match["key"]))
+    return lst
+
 def competition_match_data(team, event):
     #This function returns a list of tuples for a team
     #tup format (event, match#, color, position)
