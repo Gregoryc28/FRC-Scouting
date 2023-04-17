@@ -33,6 +33,36 @@ def get_matches(event):
     matches = getTBA(f"event/{event}/matches")
     return matches
 
+def competition_match_data_all(event):
+    # This function returns a list of tuples for all matches
+    # tup format (match#, teams_in_match)
+    lst = []
+    matches = getTBA("event/" + event + "/matches")
+    for match in matches:
+        
+        # Check what type of match it is
+        if match["comp_level"] == "qm":
+            competition_level = "Qualification-Match"
+        elif match["comp_level"] == "qf":
+            competition_level = "Quarter-Final"
+        elif match["comp_level"] == "sf":
+            competition_level = "Semi-Final"
+        elif match["comp_level"] == "f":
+            competition_level = "Final"
+
+        # If the match is a qf, sf, or f, then we need to make sure we add which round it is
+        if competition_level != "Qualification-Match":
+            set_number = match["set_number"]
+            competition_level += f" ({set_number})"
+
+        matchNum = match["match_number"]
+
+        matchNum = competition_level + " " + str(matchNum)
+
+        teams = match["alliances"]["blue"]["team_keys"] + match["alliances"]["red"]["team_keys"]
+        lst.append((matchNum, teams, competition_level, match["match_number"], match["key"]))
+    return lst
+
 def competition_match_data(team, event):
     #This function returns a list of tuples for a team
     #tup format (event, match#, color, position)
@@ -882,7 +912,6 @@ def getChargeConsistency(position, match_key, alliance, times, xData, yData):
             if teleop_attempted_charge or auto_attempted_charge:
                 match_info = getTBA("match/" + match_key)
                 score_breakdown = match_info["score_breakdown"]
-                print(score_breakdown)
                 charging = score_breakdown['red'][f"endGameChargeStationRobot{position}"]
                 if charging == "Docked" or charging == "Engaged":
                     teleop_charged = True
@@ -1040,10 +1069,6 @@ def distanceFivePointMovingAverage(xData, yData):
     for i in range(5):
         distanceWindows.append(-7777)
 
-    # distances = []
-    # for i in range(len(xData)):
-    #     distances.append(math.sqrt(xData[i]**2 + yData[i]**2))
-
     # Those were not real distances... To find distance we need two points, not just one set
     distances = []
     for i in range(len(xData) - 1):
@@ -1060,13 +1085,30 @@ def distanceFivePointMovingAverage(xData, yData):
     # Starting_point 1 is really the second point in the list and ending point 5 is really the 6th point in the list
     starting_point = 1
     ending_point = 5
+    
+    # while ending_point < len(distances):
+    #     next_five_window = 0
+    #     for i in range(starting_point, ending_point + 1):
+    #         next_five_window += distances[i]
+    #     next_five_window = next_five_window / 5
+    #     distanceWindows.append(next_five_window)
+    #     starting_point += 1
+    #     ending_point += 1
+
+    # Re-written moving average calculation to reduce number of operations occuring.
+    next_five_window = 0
+    for i in range(starting_point, ending_point + 1):
+        next_five_window += distances[i]
+    average_over_window = next_five_window / 5
+    distanceWindows.append(average_over_window)
+    starting_point += 1
+    ending_point += 1
 
     while ending_point < len(distances):
-        next_five_window = 0
-        for i in range(starting_point, ending_point + 1):
-            next_five_window += distances[i]
-        next_five_window = next_five_window / 5
-        distanceWindows.append(next_five_window)
+        average_over_window = 0
+        next_five_window = next_five_window - distances[starting_point - 1] + distances[ending_point]
+        average_over_window = next_five_window / 5
+        distanceWindows.append(average_over_window)
         starting_point += 1
         ending_point += 1
 
