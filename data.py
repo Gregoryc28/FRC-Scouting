@@ -1,3 +1,5 @@
+import traceback
+
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -785,11 +787,11 @@ def team_performance(team, event):
                 if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
                     auto_points.append(match['score_breakdown']['red']['autoPoints'])
                     teleop_points.append(match['score_breakdown']['red']['teleopPoints'])
-                    match_scores.append(match['score_breakdown']['red']['autoPoints'] + match['score_breakdown']['red']['teleopPoints'] + match['score_breakdown']['red']['foulPoints'] + match['score_breakdown']['red']['adjustPoints'] + match['score_breakdown']['red']['linkPoints'])
+                    match_scores.append(match['score_breakdown']['red']['autoPoints'] + match['score_breakdown']['red']['teleopPoints'] + match['score_breakdown']['red']['foulPoints'] + match['score_breakdown']['red']['adjustPoints'])
                 else:
                     auto_points.append(match['score_breakdown']['blue']['autoPoints'])
                     teleop_points.append(match['score_breakdown']['blue']['teleopPoints'])
-                    match_scores.append(match['score_breakdown']['blue']['autoPoints'] + match['score_breakdown']['blue']['teleopPoints'] + match['score_breakdown']['blue']['foulPoints'] + match['score_breakdown']['blue']['adjustPoints'] + match['score_breakdown']['blue']['linkPoints'])
+                    match_scores.append(match['score_breakdown']['blue']['autoPoints'] + match['score_breakdown']['blue']['teleopPoints'] + match['score_breakdown']['blue']['foulPoints'] + match['score_breakdown']['blue']['adjustPoints'])
             average_auto_points = round(sum(auto_points) / len(auto_points), 2)
             average_teleop_points = round(sum(teleop_points) / len(teleop_points), 2)
             average_match_score = round(sum(match_scores) / len(match_scores), 2)

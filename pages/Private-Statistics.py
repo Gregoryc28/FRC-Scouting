@@ -15,9 +15,9 @@ import pandas as pd
 
 from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, returnDefense
 
-year = 2023
+year = 2024
         
-event = "FIRST Long Island Regional #2, (2023nyli2)"
+event = "Finger Lakes Regional, (2024nyro)"
 event_key = event[event.index('('):]
 event_key = event_key[1:-1]
 #event_key = "2023nyli1"

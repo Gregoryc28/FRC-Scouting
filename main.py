@@ -60,7 +60,7 @@ teams = [564, 870, 263, 514, 527, 694]
 #team = st.selectbox("Select a team", teams)
 
 team = teams[0]
-year = 2023
+year = 2024
 
 formattedNames = []
 namesList = get_events(year)
@@ -68,8 +68,8 @@ for name in namesList:
     formatted = f"{name[0]}, ({name[1]})"
     formattedNames.append(formatted)
 
-formattedNames.remove("FIRST Long Island Regional #2, (2023nyli2)")
-formattedNames.insert(0, "FIRST Long Island Regional #2, (2023nyli2)")
+formattedNames.remove("Finger Lakes Regional, (2024nyro)")
+formattedNames.insert(0, "Finger Lakes Regional, (2024nyro)")
         
 event = st.selectbox("Select an event", formattedNames)
 event_key = event[event.index('('):]
@@ -93,7 +93,7 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Team-Performance-Stats", "Charge-Data", "Motion-Stats", "Robot-Stats", "Cycle-Data", "Match-Videos", "Event-Stats", "Match-Predictions"]
+data_selection_choices = ["Team-Performance-Stats", "Match-Videos", "Event-Stats", "Match-Predictions"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 

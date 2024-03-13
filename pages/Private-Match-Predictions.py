@@ -17,7 +17,7 @@ from data import competition_match_data, zebra_data_pull, zebra_data_quarterfina
 
 year = 2023
         
-event = "FIRST Long Island Regional #2, (2023nyli2)"
+event = "Finger Lakes Regional, (2024nyro)"
 event_key = event[event.index('('):]
 event_key = event_key[1:-1]
 #event_key = "2023nyli1"
