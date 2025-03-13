@@ -15,9 +15,10 @@ import pandas as pd
 
 from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, returnDefense
 
-year = 2024
+year = 2025
         
-event = "Finger Lakes Regional, (2024nyro)"
+event = "Finger Lakes Regional, (2025nyro)"
+# event = "Northern Lights Regional, (2025mndu2)"
 event_key = event[event.index('('):]
 event_key = event_key[1:-1]
 #event_key = "2023nyli1"
@@ -29,7 +30,7 @@ for team in get_teams:
     team = team[team.index(','):]
     team = team[2:]
 
-    while len(team) > 4:
+    while len(team) > 5:
         team = team[team.index(','):]
         team = team[2:]
 

@@ -5,8 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import requests
+from config import TheBlueAllianceKey
 
-key = '1G6v0bQs4mo1fSbS6u8gaalKODDET6hSder9HRNeXsca986C9H2F1Vc2oafNVGfl'
+key = TheBlueAllianceKey
 baseURL = 'https://www.thebluealliance.com/api/v3/'
 header = {'X-TBA-Auth-Key':key}
 #This prevents us from repeatedly opening and closing a socket + speeds it up.
@@ -96,7 +97,7 @@ def competition_match_data(team, event):
         lst.append( (event, matchNum, color, position, competition_level, match["key"]) )
     return lst
 
-# zebra data bla bla bla -ryan
+# zebra data
 def zebra_data_quarterfinals_pull(event, match, color, position, competition_level):
     data = getTBA("match/" + event + "_" + competition_level + str(match) + "/zebra_motionworks")
     times = data['times'] #List of times in 1 second interval for match
@@ -384,10 +385,10 @@ def zebra_data_pull(event, match, color, position):
             pass
 
     return times, xData, yData
+
 def pythagorean_theorem(a, b):
     c = math.sqrt(math.pow(a,2) + math.pow(b,2))
     return c
-
 
 def zebra_speed(times, xData, yData):
     speeds = []
@@ -407,7 +408,7 @@ def zebra_speed(times, xData, yData):
         j += 1
     return speeds
 
-def get_zoneData(team, event, match, times, xData, yData):
+def get_zoneData(times, xData, yData):
     zoneData = []
     i = 0
     try:
@@ -682,7 +683,7 @@ def average_speed(times, xData, yData):
     try:
         speeds = zebra_speed(times, xData, yData)
         for speed in speeds:
-            if speed > 20:
+            if speed > 25:
                 speeds.remove(speed)
         avg_speed = sum(speeds) / len(speeds)
         return avg_speed
@@ -706,7 +707,7 @@ def max_speed(times, xData, yData):
         speeds = zebra_speed(times, xData, yData)
         # Remove any outlandish speeds from the speeds list
         for speed in speeds:
-            if speed > 20:
+            if speed > 25:
                 speeds.remove(speed)
         max_speed = max(speeds)
         return max_speed
@@ -958,8 +959,6 @@ def getChargeConsistency(position, match_key, alliance, times, xData, yData):
             pass
 
     return teleop_attempted_charge, teleop_charged, teleop_type_charge, auto_attempted_charge, auto_charged, auto_type_charge
-    
-
 
 # This function will use zone data to determine if a team is mostly defense or offense. This will be a prediction that is hopefully accurate.
 def determineDefense(team, event_key, alliance, times, xData, yData):
@@ -1158,3 +1157,249 @@ def highestAverageVelocity(xData, yData, times):
 
     highest_average_velocity = sum(highest_velocities) / len(highest_velocities)
     return highest_average_velocity
+
+# ----------- 2025 Game Specific Functions ------------
+
+# TODO: Utilize the get_scoreBreakdown function to gather game specific data
+
+# Create a function to get a team's average number of coral scored in the top row in Teleop
+def getAverageTopRowCoralScoredTeleop(team, event_key):
+    # Get the matches for the team
+    try:
+        matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+        coral_scored = []
+        for match in matches:
+            if match['score_breakdown'] is not None:
+                if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                    coral_scored.append(match['score_breakdown']['red']['teleopReef']['tba_topRowCount'])
+                else:
+                    coral_scored.append(match['score_breakdown']['blue']['teleopReef']['tba_topRowCount'])
+        average_coral_scored = sum(coral_scored) / len(coral_scored)
+        # Round the result to 2 decimal places
+        average_coral_scored = round(average_coral_scored, 2)
+        return average_coral_scored
+    except:
+        return 7777
+
+# Create a function to get a team's average number of coral scored in the middle row in Teleop
+def getAverageMiddleRowCoralScoredTeleop(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['teleopReef']['tba_midRowCount'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['teleopReef']['tba_midRowCount'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's average number of coral scored in the bottom row in Teleop
+def getAverageBottomRowCoralScoredTeleop(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['teleopReef']['tba_botRowCount'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['teleopReef']['tba_botRowCount'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's average number of coral scored in the trough in Teleop
+def getAverageTroughCoralScoredTeleop(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['teleopReef']['trough'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['teleopReef']['trough'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's average number of coral scored in the top row in Auto
+def getAverageTopRowCoralScoredAuto(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['autoReef']['tba_topRowCount'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['autoReef']['tba_topRowCount'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's average number of coral scored in the middle row in Auto
+def getAverageMiddleRowCoralScoredAuto(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['autoReef']['tba_midRowCount'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['autoReef']['tba_midRowCount'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's average number of coral scored in the bottom row in Auto
+def getAverageBottomRowCoralScoredAuto(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['autoReef']['tba_botRowCount'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['autoReef']['tba_botRowCount'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's average number of coral scored in the trough in Auto
+def getAverageTroughCoralScoredAuto(team, event_key):
+    # Get the matches for the team
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    coral_scored = []
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team or match['alliances']['red']['team_keys'][1][3:] == team or match['alliances']['red']['team_keys'][2][3:] == team:
+                coral_scored.append(match['score_breakdown']['red']['autoReef']['trough'])
+            else:
+                coral_scored.append(match['score_breakdown']['blue']['autoReef']['trough'])
+    average_coral_scored = sum(coral_scored) / len(coral_scored)
+    # Round the result to 2 decimal places
+    average_coral_scored = round(average_coral_scored, 2)
+    return average_coral_scored
+
+# Create a function to get a team's number of times they have climbed parked in the endgame
+def getEndgameParked(team, event_key):
+    # We must identify if the robot for this team was robot1, robot2, or robot3
+    # We will do this by checking the score breakdown of a match where this team was present
+    # We will then check if the robot was parked in the endgame
+    # We will then count the number of times the robot was parked in the endgame
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    parked = 0
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot1'] == 'Parked':
+                    parked += 1
+            elif match['alliances']['red']['team_keys'][1][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot2'] == 'Parked':
+                    parked += 1
+            elif match['alliances']['red']['team_keys'][2][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot3'] == 'Parked':
+                    parked += 1
+            elif match['alliances']['blue']['team_keys'][0][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot1'] == 'Parked':
+                    parked += 1
+            elif match['alliances']['blue']['team_keys'][1][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot2'] == 'Parked':
+                    parked += 1
+            elif match['alliances']['blue']['team_keys'][2][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot3'] == 'Parked':
+                    parked += 1
+    return parked
+
+# Create a function to get a team's number of times they have gotten ShallowCage in the endgame
+def getEndgameShallowCage(team, event_key):
+    # We must identify if the robot for this team was robot1, robot2, or robot3
+    # We will do this by checking the score breakdown of a match where this team was present
+    # We will then check if the robot was parked in the endgame
+    # We will then count the number of times the robot was parked in the endgame
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    shallow_cage = 0
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot1'] == 'ShallowCage':
+                    shallow_cage += 1
+            elif match['alliances']['red']['team_keys'][1][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot2'] == 'ShallowCage':
+                    shallow_cage += 1
+            elif match['alliances']['red']['team_keys'][2][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot3'] == 'ShallowCage':
+                    shallow_cage += 1
+            elif match['alliances']['blue']['team_keys'][0][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot1'] == 'ShallowCage':
+                    shallow_cage += 1
+            elif match['alliances']['blue']['team_keys'][1][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot2'] == 'ShallowCage':
+                    shallow_cage += 1
+            elif match['alliances']['blue']['team_keys'][2][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot3'] == 'ShallowCage':
+                    shallow_cage += 1
+    return shallow_cage
+
+# Create a function to get a team's number of times they have gotten DeepCage in the endgame
+def getEndgameDeepCage(team, event_key):
+    # We must identify if the robot for this team was robot1, robot2, or robot3
+    # We will do this by checking the score breakdown of a match where this team was present
+    # We will then check if the robot was parked in the endgame
+    # We will then count the number of times the robot was parked in the endgame
+    matches = getTBA("team/frc" + team + "/event/" + event_key + "/matches")
+    deep_cage = 0
+    for match in matches:
+        if match['score_breakdown'] is not None:
+            if match['alliances']['red']['team_keys'][0][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot1'] == 'DeepCage':
+                    deep_cage += 1
+            elif match['alliances']['red']['team_keys'][1][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot2'] == 'DeepCage':
+                    deep_cage += 1
+            elif match['alliances']['red']['team_keys'][2][3:] == team:
+                if match['score_breakdown']['red']['endGameRobot3'] == 'DeepCage':
+                    deep_cage += 1
+            elif match['alliances']['blue']['team_keys'][0][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot1'] == 'DeepCage':
+                    deep_cage += 1
+            elif match['alliances']['blue']['team_keys'][1][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot2'] == 'DeepCage':
+                    deep_cage += 1
+            elif match['alliances']['blue']['team_keys'][2][3:] == team:
+                if match['score_breakdown']['blue']['endGameRobot3'] == 'DeepCage':
+                    deep_cage += 1
+    return deep_cage
+
+# Create a function to check if a team is probably more offensive or defensive by checking if ccwm is positive or negative
+def checkOffensiveOrDefensive(team, event_key):
+    ccwm = getTeamCCWM(team, event_key)
+
+    # Calculate the percent difference between the OPRS and DPRS
+    percent_difference = (abs(getTeamOPRS(team, event_key) - getTeamDPRS(team, event_key)) / ((getTeamOPRS(team, event_key) + getTeamDPRS(team, event_key)) / 2)) * 100
+
+    # Round the percent difference to 2 decimal places
+    percent_difference = round(percent_difference, 2)
+
+    if ccwm > 0:
+        return 'Offensive', percent_difference, "Defensive"
+    elif ccwm < 0:
+        return 'Defensive', percent_difference, "Offensive"
+    else:
+        return 'Balanced'
+
+    # TODO: Present statement as 'the team' is 'offensive/defensive'. They are 'percent_difference'% more 'offensive/defensive' than they are 'defensive/offensive'.
+
+# ----------- 2025 Game Specific Functions ------------

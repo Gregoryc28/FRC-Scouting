@@ -15,12 +15,19 @@ import pandas as pd
 
 from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, returnDefense, getRealMatchScore, match_predictWinner, get_scoreBreakdown, get_matches 
 
-year = 2023
+year = 2025
         
-event = "Finger Lakes Regional, (2024nyro)"
+#event = "Finger Lakes Regional, (2025nyro)"
+event = "Northern Lights Regional, (2025mndu2)"
 event_key = event[event.index('('):]
 event_key = event_key[1:-1]
 #event_key = "2023nyli1"
+
+formattedNames = []
+namesList = get_events(year)
+for name in namesList:
+    formatted = f"{name[0]}, ({name[1]})"
+    formattedNames.append(formatted)
 
 team_numbers = []
 
@@ -29,7 +36,7 @@ for team in get_teams:
     team = team[team.index(','):]
     team = team[2:]
 
-    while len(team) > 4:
+    while len(team) > 5:
         team = team[team.index(','):]
         team = team[2:]
 
@@ -71,9 +78,12 @@ def check_password():
         return True
 
 if check_password():
-    matches = get_matches(event_key)
-
     st.title("Match Predictions Analysis")
+    predicted_correctly = 0
+    total_matches = 0
+    event_key = event[event.index('('):]
+    event_key = event_key[1:-1]
+    matches = get_matches(event_key)
 
     match_numbers = []
     matches = get_matches(event_key)
@@ -88,8 +98,8 @@ if check_password():
         if get_scoreBreakdown(match["key"]) != None:
             working_matches.append(match["key"])
 
-    total_matches = len(working_matches)
-    predicted_correctly = 0
+    total_matches_event = len(working_matches)
+    total_matches += total_matches_event
 
     # Get the real match score to determine the winner of each match, and the predicted winner of each match
     for match in working_matches:
@@ -98,7 +108,7 @@ if check_password():
 
         # Get the predicted winner of each match
         predicted_winner = predicted_data[0]
-        
+
         # Get the real winner of each match
         if real_data[0] > real_data[1]:
             real_winner = "Red Alliance"
@@ -108,6 +118,47 @@ if check_password():
         # Check if the predicted winner is the same as the real winner
         if predicted_winner == real_winner:
             predicted_correctly += 1
+    # for event in formattedNames:
+    #     try:
+    #         event_key = event[event.index('('):]
+    #         event_key = event_key[1:-1]
+    #         matches = get_matches(event_key)
+    #
+    #         match_numbers = []
+    #         matches = get_matches(event_key)
+    #         # Sort the matches from earliest to latest
+    #         for match in matches:
+    #             match_numbers.append(match["match_number"])
+    #
+    #         match_numbers.sort()
+    #
+    #         working_matches = []
+    #         for match in matches:
+    #             if get_scoreBreakdown(match["key"]) != None:
+    #                 working_matches.append(match["key"])
+    #
+    #         total_matches_event = len(working_matches)
+    #         total_matches += total_matches_event
+    #
+    #         # Get the real match score to determine the winner of each match, and the predicted winner of each match
+    #         for match in working_matches:
+    #             real_data = getRealMatchScore(match)
+    #             predicted_data = match_predictWinner(event_key, match)
+    #
+    #             # Get the predicted winner of each match
+    #             predicted_winner = predicted_data[0]
+    #
+    #             # Get the real winner of each match
+    #             if real_data[0] > real_data[1]:
+    #                 real_winner = "Red Alliance"
+    #             elif real_data[0] < real_data[1]:
+    #                 real_winner = "Blue Alliance"
+    #
+    #             # Check if the predicted winner is the same as the real winner
+    #             if predicted_winner == real_winner:
+    #                 predicted_correctly += 1
+    #     except:
+    #         continue
 
     # Calculate the percentage of matches that were predicted correctly
     num_correct = predicted_correctly

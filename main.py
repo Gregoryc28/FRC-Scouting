@@ -17,7 +17,9 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import pandas as pd
 
-from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner, getRealMatchScore, distanceFivePointMovingAverage, highestAverageVelocity, totalDistanceTraveled, fivePointAverageVelocity  
+#from data import competition_match_data, zebra_data_pull, zebra_data_quarterfinals_pull, zebra_data_semifinals_pull, zebra_data_finals_pull, zebra_speed, get_zoneData, get_events, get_events_teams, zebra_speed_percentile_graph, zebra_zone_percentile_piegraph, get_autoChargeConfirmation, get_timeChargingAuto, get_cycleData, get_team_match_videos, team_performance, average_speed, getRankings, getTeamCCWM, getTeamDPRS, getTeamOPRS, getTeamRank, getTeamRecord, getPlayoffAlliances, determineDefense, getChargeConsistency, average_speed_topPercentile, max_speed, get_scoreBreakdown, match_predictWinner, getRealMatchScore, distanceFivePointMovingAverage, highestAverageVelocity, totalDistanceTraveled, fivePointAverageVelocity
+
+from data import *
 
 # Google Analytics
 
@@ -60,7 +62,7 @@ teams = [564, 870, 263, 514, 527, 694]
 #team = st.selectbox("Select a team", teams)
 
 team = teams[0]
-year = 2024
+year = 2025
 
 formattedNames = []
 namesList = get_events(year)
@@ -68,8 +70,8 @@ for name in namesList:
     formatted = f"{name[0]}, ({name[1]})"
     formattedNames.append(formatted)
 
-formattedNames.remove("Finger Lakes Regional, (2024nyro)")
-formattedNames.insert(0, "Finger Lakes Regional, (2024nyro)")
+formattedNames.remove("Finger Lakes Regional, (2025nyro)")
+formattedNames.insert(0, "Finger Lakes Regional, (2025nyro)")
         
 event = st.selectbox("Select an event", formattedNames)
 event_key = event[event.index('('):]
@@ -82,7 +84,7 @@ for team in get_teams:
     team = team[team.index(','):]
     team = team[2:]
 
-    while len(team) > 4:
+    while len(team) > 5:
         team = team[team.index(','):]
         team = team[2:]
 
@@ -93,7 +95,7 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Team-Performance-Stats", "Match-Videos", "Event-Stats", "Match-Predictions"]
+data_selection_choices = ["Team-Performance-Stats", "Match-Videos", "Event-Stats", "Match-Predictions", "Game-Specific-Stats"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 
@@ -901,4 +903,64 @@ if data_selector == "Motion-Stats":
     st.warning("All data shown is obtained from **Zebra MotionWorks** data through TheBlueAlliance API.", icon="⚠️")
 
     # Add an info box to give credit
+    st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
+
+if data_selector == "Game-Specific-Stats":
+    # Display the game specific statistics for the team at the event.
+    st.markdown(f"<h1 style='text-align: center; color: orange;'>Game Specific Statistics for Team {team} at Event: {event_key}</h1>", unsafe_allow_html=True)
+
+    # Get the game specific statistics for the team at the event
+    averageTopRowCoralTeleop = getAverageTopRowCoralScoredTeleop(team, event_key)
+
+    # Check if no data is available
+    if averageTopRowCoralTeleop == 7777:
+        st.warning("It appears that data for this teams matches has not been added yet... Has this team played a match?", icon="⚠️")
+    else:
+
+        averageMiddleRowCoralTeleop = getAverageMiddleRowCoralScoredTeleop(team, event_key)
+        averageBottomRowCoralTeleop = getAverageBottomRowCoralScoredTeleop(team, event_key)
+        averageTopRowCoralAutonomous = getAverageTopRowCoralScoredAuto(team, event_key)
+        averageMiddleRowCoralAutonomous = getAverageMiddleRowCoralScoredAuto(team, event_key)
+        averageBottomRowCoralAutonomous = getAverageBottomRowCoralScoredAuto(team, event_key)
+        averageTroughCoralTeleop = getAverageTroughCoralScoredTeleop(team, event_key)
+        averageTroughCoralAutonomous = getAverageTroughCoralScoredAuto(team, event_key)
+
+        numParked = getEndgameParked(team, event_key)
+        numShallowCage = getEndgameShallowCage(team, event_key)
+        numDeepCage = getEndgameDeepCage(team, event_key)
+
+        checkOffDef = checkOffensiveOrDefensive(team, event_key)
+
+        # # Display the game specific statistics for the team at the event
+        # st.write(f"**Average Top Row Coral Scored in Teleop:** {averageTopRowCoralTeleop}")
+        # st.write(f"**Average Middle Row Coral Scored in Teleop:** {averageMiddleRowCoralTeleop}")
+        # st.write(f"**Average Bottom Row Coral Scored in Teleop:** {averageBottomRowCoralTeleop}")
+        # st.write(f"**Average Top Row Coral Scored in Autonomous:** {averageTopRowCoralAutonomous}")
+        # st.write(f"**Average Middle Row Coral Scored in Autonomous:** {averageMiddleRowCoralAutonomous}")
+        # st.write(f"**Average Bottom Row Coral Scored in Autonomous:** {averageBottomRowCoralAutonomous}")
+        # st.write(f"**Average Trough Coral Scored in Teleop:** {averageTroughCoralTeleop}")
+        # st.write(f"**Average Trough Coral Scored in Autonomous:** {averageTroughCoralAutonomous}")
+        # st.write(f"**Number of Times Parked in Endgame:** {numParked}")
+        # st.write(f"**Number of Times in Shallow Cage in Endgame:** {numShallowCage}")
+        # st.write(f"**Number of Times in Deep Cage in Endgame:** {numDeepCage}")
+        #
+        # # Display whether the team is offensive or defensive
+        # st.write(f"Team {team} is most likely :orange[**{checkOffDef[0]}**]. They are :orange[**{checkOffDef[1]}%**] more :orange[**{checkOffDef[0]}**] than :orange[**{checkOffDef[2]}**].")
+
+        # Do the same markdown as above except make the text color white and the number color orange
+        st.markdown(f"<h3 style='color: white;'>Average Top Row Coral Scored in Teleop: <span style='color: orange;'>{averageTopRowCoralTeleop}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Middle Row Coral Scored in Teleop: <span style='color: orange;'>{averageMiddleRowCoralTeleop}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Bottom Row Coral Scored in Teleop: <span style='color: orange;'>{averageBottomRowCoralTeleop}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Top Row Coral Scored in Autonomous: <span style='color: orange;'>{averageTopRowCoralAutonomous}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Middle Row Coral Scored in Autonomous: <span style='color: orange;'>{averageMiddleRowCoralAutonomous}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Bottom Row Coral Scored in Autonomous: <span style='color: orange;'>{averageBottomRowCoralAutonomous}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Trough Coral Scored in Teleop: <span style='color: orange;'>{averageTroughCoralTeleop}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Average Trough Coral Scored in Autonomous: <span style='color: orange;'>{averageTroughCoralAutonomous}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Number of Times Parked in Endgame: <span style='color: orange;'>{numParked}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Number of Times in Shallow Cage in Endgame: <span style='color: orange;'>{numShallowCage}</span></h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: white;'>Number of Times in Deep Cage in Endgame: <span style='color: orange;'>{numDeepCage}</span></h3>", unsafe_allow_html=True)
+
+        st.markdown(f"<h3 style='color: white;'>Team <span style='color: orange;'>{team}</span> is most likely <span style='color: orange;'>{checkOffDef[0]}</span>. They are <span style='color: orange;'>{checkOffDef[1]}</span>% more <span style='color: orange;'>{checkOffDef[0]}</span> than <span style='color: orange;'>{checkOffDef[2]}</span>.</h3>", unsafe_allow_html=True)
+
+    # Add info message
     st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
