@@ -152,6 +152,160 @@ if data_selector == "Team-Performance-Stats":
                         st.metric(label="Match Score", value=match_score, delta=f"{-round(avg_match_score - match_score, 2)}% Below the teams average match score")
                 count += 1
 
+        # # Add the defensive impact calculation
+        # with st.spinner(f"Calculating defensive impact for team {team}..."):
+        #     avg_defensive_impact, defense_details = calculate_defensive_impact(team, event_key)
+        #
+        # if display:
+        #     # Your existing display code here...
+        #
+        #     # Add a section for defensive impact
+        #     st.write("---")
+        #     st.write(f"## :red[Defensive Impact]")
+        #
+        #     if avg_defensive_impact > 0:
+        #         st.write(
+        #             f"### Teams score an average of :red[{avg_defensive_impact} points less] when playing against team {team}")
+        #
+        #         # Create a more visual metric
+        #         st.metric(
+        #             label="Average Defensive Impact",
+        #             value=f"{avg_defensive_impact} points",
+        #             delta=f"{avg_defensive_impact} pts below average",
+        #             delta_color="normal"
+        #         )
+        #
+        #         # Show detailed breakdown if there's data
+        #         if len(defense_details) > 0 and st.checkbox("Show detailed defensive impact breakdown"):
+        #             # Convert the details to a DataFrame
+        #             defense_data = []
+        #             for team_num, data in defense_details.items():
+        #                 defense_data.append({
+        #                     "Team": team_num,
+        #                     "Normal Avg Score": data["overall_avg_score"],
+        #                     f"Avg Score vs {team}": data["vs_target_avg_score"],
+        #                     "Points Difference": data["point_difference"]
+        #                 })
+        #
+        #             defense_df = pd.DataFrame(defense_data)
+        #             # Sort by the point difference to show largest defensive impact first
+        #             defense_df = defense_df.sort_values(by="Points Difference", ascending=False)
+        #
+        #             st.table(defense_df)
+        #     else:
+        #         # Negative defensive impact
+        #         if avg_defensive_impact < 0:
+        #             st.write(
+        #                 f"### Teams score an average of :green[{abs(avg_defensive_impact)} points more] when playing against team {team}")
+        #             st.write("This suggests the team may not have a strong defensive presence.")
+        #         else:
+        #             st.write(f"### Teams score about the same when playing against team {team}")
+        #
+        #         if len(defense_details) == 0:
+        #             st.write("Not enough data available to calculate detailed defensive impact.")
+
+        # Add the defensive impact calculations
+        with st.spinner(f"Calculating defensive impact for team {team}..."):
+            avg_defensive_impact, defense_details = calculate_defensive_impact(team, event_key)
+            playoff_defensive_impact, playoff_defense_details, has_playoff_data = calculate_defensive_impact_playoffs(
+                team, event_key)
+
+        if display:
+            # Your existing display code here...
+
+            # Add a section for defensive impact
+            st.write("---")
+            st.write(f"## :red[Defensive Impact]")
+
+            # Regular season defensive impact
+            if avg_defensive_impact > 0:
+                st.write(
+                    f"### All Matches: Teams score an average of :red[{avg_defensive_impact} points less] when playing against team {team}")
+
+                # Create a more visual metric
+                st.metric(
+                    label="Regular Season Defensive Impact",
+                    value=f"{avg_defensive_impact} points",
+                    delta=f"{avg_defensive_impact} pts below average",
+                    delta_color="normal"
+                )
+
+                # Show detailed breakdown if there's data
+                if len(defense_details) > 0 and st.checkbox("Show regular season defensive breakdown"):
+                    # Convert the details to a DataFrame
+                    defense_data = []
+                    for team_num, data in defense_details.items():
+                        defense_data.append({
+                            "Team": team_num,
+                            "Normal Avg Score": data["overall_avg_score"],
+                            f"Avg Score vs {team}": data["vs_target_avg_score"],
+                            "Points Difference": data["point_difference"]
+                        })
+
+                    defense_df = pd.DataFrame(defense_data)
+                    # Sort by the point difference to show largest defensive impact first
+                    defense_df = defense_df.sort_values(by="Points Difference", ascending=False)
+
+                    st.table(defense_df)
+            else:
+                # Negative or no defensive impact in regular season
+                if avg_defensive_impact < 0:
+                    st.write(
+                        f"### All Matches: Teams score an average of :green[{abs(avg_defensive_impact)} points more] when playing against :orange[team {team}]")
+                    st.write(
+                        "This suggests the team may not have a strong defensive presence across all matches.")
+                else:
+                    st.write(f"### All Matches: Teams score about the same when playing against :orange[team {team}]")
+
+            # Add a divider between regular season and playoff data
+            st.write("---")
+
+            # Playoff defensive impact
+            st.write("## :red[Playoff Defensive Impact]")
+
+            if has_playoff_data:
+                if playoff_defensive_impact > 0:
+                    st.write(
+                        f"### Playoffs: Teams score an average of :red[{playoff_defensive_impact} points less] when playing against :orange[team {team}]")
+
+                    # Create a more visual metric
+                    st.metric(
+                        label="Playoff Defensive Impact",
+                        value=f"{playoff_defensive_impact} points",
+                        delta=f"{playoff_defensive_impact} pts below average",
+                        delta_color="normal"
+                    )
+
+                    # Show detailed breakdown if there's data
+                    if len(playoff_defense_details) > 0 and st.checkbox("Show playoff defensive breakdown"):
+                        # Convert the details to a DataFrame
+                        playoff_data = []
+                        for team_num, data in playoff_defense_details.items():
+                            playoff_data.append({
+                                "Team": team_num,
+                                "Playoff Avg Score": data["overall_avg_score"],
+                                f"Avg Score vs {team}": data["vs_target_avg_score"],
+                                "Points Difference": data["point_difference"]
+                            })
+
+                        playoff_df = pd.DataFrame(playoff_data)
+                        # Sort by the point difference to show largest defensive impact first
+                        playoff_df = playoff_df.sort_values(by="Points Difference", ascending=False)
+
+                        st.table(playoff_df)
+                else:
+                    # Negative or no defensive impact in playoffs
+                    if playoff_defensive_impact < 0:
+                        st.write(
+                            f"### Playoffs: Teams score an average of :green[{abs(playoff_defensive_impact)} points more] when playing against team {team}")
+                        st.write(
+                            "This suggests the team may not have a strong defensive presence in playoff matches.")
+                    else:
+                        st.write(
+                            f"### Playoffs: Teams score about the same when playing against :orange[team {team}] in playoff matches")
+            else:
+                st.warning("No playoff data available for this team.", icon="⚠️")
+
         # Add a streamlit info box to the bottom of the page mentioning that the data is provided by Longwood Robotics Team 564
         st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
 
