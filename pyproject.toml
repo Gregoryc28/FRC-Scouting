@@ -6,7 +6,7 @@ authors = ["Your Name <you@example.com>"]
 package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.10.0,<3.11"
+python = ">=3.10.0,<=3.12.9"
 numpy = "^1.22.2"
 replit = "^3.2.4"
 Flask = "^2.2.0"
