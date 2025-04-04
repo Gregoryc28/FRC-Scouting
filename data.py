@@ -1629,4 +1629,387 @@ def calculate_defensive_impact_playoffs(team, event_key):
 
     return avg_defensive_impact, results, True
 
+
+def calculate_defensive_impact_qualifications(event_key):
+    """
+    Calculate defensive impact for all teams in qualification matches at an event.
+
+    Args:
+        event_key (str): The event key
+
+    Returns:
+        list: List of tuples (team, defensive_impact) sorted by impact
+    """
+    # Get all teams from the event
+    teams = getTBA(f"event/{event_key}/teams")
+    team_numbers = [team["key"][3:] for team in teams]  # Remove 'frc' prefix
+
+    # Get all qualification matches from the event
+    all_matches = getTBA(f"event/{event_key}/matches")
+    qual_matches = [match for match in all_matches if
+                    match.get("comp_level") == "qm" and
+                    match.get("score_breakdown") is not None]
+
+    # Create a dictionary to track all teams' average scores in quals
+    all_teams_data = {}
+
+    # First pass: Calculate average scores for all teams in quals
+    for match in qual_matches:
+        red_alliance = match["alliances"]["red"]["team_keys"]
+        blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+        red_score = match["score_breakdown"]["red"]["totalPoints"]
+        blue_score = match["score_breakdown"]["blue"]["totalPoints"]
+
+        # Add data for red alliance teams
+        for team_key in red_alliance:
+            team_num = team_key[3:]  # Remove 'frc' prefix
+            if team_num not in all_teams_data:
+                all_teams_data[team_num] = {"total_points": 0, "match_count": 0}
+
+            all_teams_data[team_num]["total_points"] += red_score
+            all_teams_data[team_num]["match_count"] += 1
+
+        # Add data for blue alliance teams
+        for team_key in blue_alliance:
+            team_num = team_key[3:]  # Remove 'frc' prefix
+            if team_num not in all_teams_data:
+                all_teams_data[team_num] = {"total_points": 0, "match_count": 0}
+
+            all_teams_data[team_num]["total_points"] += blue_score
+            all_teams_data[team_num]["match_count"] += 1
+
+    # Calculate defensive impact for each team
+    team_defensive_impacts = []
+
+    for team in team_numbers:
+        team_key = f"frc{team}"
+
+        # Track scores when playing against this team
+        vs_team_data = {}
+
+        # Find matches where this team competed
+        for match in qual_matches:
+            red_alliance = match["alliances"]["red"]["team_keys"]
+            blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+            red_score = match["score_breakdown"]["red"]["totalPoints"]
+            blue_score = match["score_breakdown"]["blue"]["totalPoints"]
+
+            # Team is on red alliance, record blue alliance scores
+            if team_key in red_alliance:
+                for opponent_key in blue_alliance:
+                    opponent = opponent_key[3:]  # Remove 'frc' prefix
+                    if opponent not in vs_team_data:
+                        vs_team_data[opponent] = {"total_points": 0, "match_count": 0}
+
+                    vs_team_data[opponent]["total_points"] += blue_score
+                    vs_team_data[opponent]["match_count"] += 1
+
+            # Team is on blue alliance, record red alliance scores
+            if team_key in blue_alliance:
+                for opponent_key in red_alliance:
+                    opponent = opponent_key[3:]  # Remove 'frc' prefix
+                    if opponent not in vs_team_data:
+                        vs_team_data[opponent] = {"total_points": 0, "match_count": 0}
+
+                    vs_team_data[opponent]["total_points"] += red_score
+                    vs_team_data[opponent]["match_count"] += 1
+
+        # Calculate results for this team
+        total_difference = 0
+        total_teams = 0
+
+        for opponent in vs_team_data:
+            if opponent in all_teams_data and vs_team_data[opponent]["match_count"] > 0:
+                overall_avg = all_teams_data[opponent]["total_points"] / all_teams_data[opponent]["match_count"]
+                vs_target_avg = vs_team_data[opponent]["total_points"] / vs_team_data[opponent]["match_count"]
+                point_difference = overall_avg - vs_target_avg
+
+                total_difference += point_difference
+                total_teams += 1
+
+        # Calculate average defensive impact
+        if total_teams > 0:
+            avg_defensive_impact = round(total_difference / total_teams, 2)
+            team_defensive_impacts.append((team, avg_defensive_impact))
+
+    # Sort by defensive impact (highest first)
+    team_defensive_impacts.sort(key=lambda x: x[1], reverse=True)
+
+    return team_defensive_impacts
+
+
+def calculate_defensive_impact_playoffs_all(event_key):
+    """
+    Calculate defensive impact for all teams in playoff matches at an event.
+
+    Args:
+        event_key (str): The event key
+
+    Returns:
+        list: List of tuples (team, defensive_impact) sorted by impact
+    """
+    # Get all teams from the event
+    teams = getTBA(f"event/{event_key}/teams")
+    team_numbers = [team["key"][3:] for team in teams]  # Remove 'frc' prefix
+
+    # Get all playoff matches from the event
+    all_matches = getTBA(f"event/{event_key}/matches")
+    playoff_matches = [match for match in all_matches if
+                       (match.get("comp_level") == "sf" or match.get("comp_level") == "f") and
+                       match.get("score_breakdown") is not None]
+
+    # Identify teams that participated in playoffs
+    playoff_teams = set()
+    for match in playoff_matches:
+        red_alliance = match["alliances"]["red"]["team_keys"]
+        blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+        for team_key in red_alliance + blue_alliance:
+            playoff_teams.add(team_key[3:])  # Remove 'frc' prefix
+
+    # Create a dictionary to track all teams' average scores in playoffs
+    all_teams_data = {}
+
+    # First pass: Calculate average scores for all teams in playoffs
+    for match in playoff_matches:
+        red_alliance = match["alliances"]["red"]["team_keys"]
+        blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+        red_score = match["score_breakdown"]["red"]["totalPoints"]
+        blue_score = match["score_breakdown"]["blue"]["totalPoints"]
+
+        # Add data for red alliance teams
+        for team_key in red_alliance:
+            team_num = team_key[3:]  # Remove 'frc' prefix
+            if team_num not in all_teams_data:
+                all_teams_data[team_num] = {"total_points": 0, "match_count": 0}
+
+            all_teams_data[team_num]["total_points"] += red_score
+            all_teams_data[team_num]["match_count"] += 1
+
+        # Add data for blue alliance teams
+        for team_key in blue_alliance:
+            team_num = team_key[3:]  # Remove 'frc' prefix
+            if team_num not in all_teams_data:
+                all_teams_data[team_num] = {"total_points": 0, "match_count": 0}
+
+            all_teams_data[team_num]["total_points"] += blue_score
+            all_teams_data[team_num]["match_count"] += 1
+
+    # Calculate defensive impact for each playoff team
+    team_defensive_impacts = []
+
+    for team in playoff_teams:
+        team_key = f"frc{team}"
+
+        # Track scores when playing against this team
+        vs_team_data = {}
+
+        # Find matches where this team competed
+        for match in playoff_matches:
+            red_alliance = match["alliances"]["red"]["team_keys"]
+            blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+            red_score = match["score_breakdown"]["red"]["totalPoints"]
+            blue_score = match["score_breakdown"]["blue"]["totalPoints"]
+
+            # Team is on red alliance, record blue alliance scores
+            if team_key in red_alliance:
+                for opponent_key in blue_alliance:
+                    opponent = opponent_key[3:]  # Remove 'frc' prefix
+                    if opponent not in vs_team_data:
+                        vs_team_data[opponent] = {"total_points": 0, "match_count": 0}
+
+                    vs_team_data[opponent]["total_points"] += blue_score
+                    vs_team_data[opponent]["match_count"] += 1
+
+            # Team is on blue alliance, record red alliance scores
+            if team_key in blue_alliance:
+                for opponent_key in red_alliance:
+                    opponent = opponent_key[3:]  # Remove 'frc' prefix
+                    if opponent not in vs_team_data:
+                        vs_team_data[opponent] = {"total_points": 0, "match_count": 0}
+
+                    vs_team_data[opponent]["total_points"] += red_score
+                    vs_team_data[opponent]["match_count"] += 1
+
+        # Calculate results for this team
+        total_difference = 0
+        total_teams = 0
+
+        for opponent in vs_team_data:
+            if opponent in all_teams_data and vs_team_data[opponent]["match_count"] > 0:
+                overall_avg = all_teams_data[opponent]["total_points"] / all_teams_data[opponent]["match_count"]
+                vs_target_avg = vs_team_data[opponent]["total_points"] / vs_team_data[opponent]["match_count"]
+                point_difference = overall_avg - vs_target_avg
+
+                total_difference += point_difference
+                total_teams += 1
+
+        # Calculate average defensive impact
+        if total_teams > 0:
+            avg_defensive_impact = round(total_difference / total_teams, 2)
+            team_defensive_impacts.append((team, avg_defensive_impact))
+
+    # Sort by defensive impact (highest first)
+    team_defensive_impacts.sort(key=lambda x: x[1], reverse=True)
+
+    return team_defensive_impacts
+
+
+def get_worldwide_teams_playoff_defensive_impact():
+    """
+    Calculate defensive impact for all teams worldwide in playoff matches.
+    This function aggregates data across multiple events.
+
+    Returns:
+        list: List of tuples (team, avg_defensive_impact, num_events) sorted by impact
+    """
+    # Get the current year
+    import datetime
+    current_year = datetime.datetime.now().year
+
+    # Get all events for the current year
+    all_events = getTBA(f"events/{current_year}")
+
+    # Track team defensive impacts across all events
+    team_impacts = {}  # team -> [impacts, event_count]
+
+    # Process each event
+    for event in all_events:
+        event_key = event["key"]
+
+        try:
+            # Skip events that haven't happened yet or don't have complete data
+            if event.get("start_date") is None or event.get("end_date") is None:
+                continue
+
+            # Get all playoff matches from the event
+            all_matches = getTBA(f"event/{event_key}/matches")
+            playoff_matches = [match for match in all_matches if
+                               (match.get("comp_level") == "sf" or match.get("comp_level") == "f") and
+                               match.get("score_breakdown") is not None]
+
+            # Skip if no playoff matches
+            if not playoff_matches:
+                continue
+
+            # Identify teams that participated in playoffs
+            playoff_teams = set()
+            for match in playoff_matches:
+                red_alliance = match["alliances"]["red"]["team_keys"]
+                blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+                for team_key in red_alliance + blue_alliance:
+                    playoff_teams.add(team_key[3:])  # Remove 'frc' prefix
+
+            # Create a dictionary to track all teams' average scores in playoffs
+            all_teams_data = {}
+
+            # First pass: Calculate average scores for all teams in playoffs
+            for match in playoff_matches:
+                red_alliance = match["alliances"]["red"]["team_keys"]
+                blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+                red_score = match["score_breakdown"]["red"]["totalPoints"]
+                blue_score = match["score_breakdown"]["blue"]["totalPoints"]
+
+                # Add data for red alliance teams
+                for team_key in red_alliance:
+                    team_num = team_key[3:]  # Remove 'frc' prefix
+                    if team_num not in all_teams_data:
+                        all_teams_data[team_num] = {"total_points": 0, "match_count": 0}
+
+                    all_teams_data[team_num]["total_points"] += red_score
+                    all_teams_data[team_num]["match_count"] += 1
+
+                # Add data for blue alliance teams
+                for team_key in blue_alliance:
+                    team_num = team_key[3:]  # Remove 'frc' prefix
+                    if team_num not in all_teams_data:
+                        all_teams_data[team_num] = {"total_points": 0, "match_count": 0}
+
+                    all_teams_data[team_num]["total_points"] += blue_score
+                    all_teams_data[team_num]["match_count"] += 1
+
+            # Calculate defensive impact for each playoff team
+            for team in playoff_teams:
+                team_key = f"frc{team}"
+
+                # Track scores when playing against this team
+                vs_team_data = {}
+
+                # Find matches where this team competed
+                for match in playoff_matches:
+                    red_alliance = match["alliances"]["red"]["team_keys"]
+                    blue_alliance = match["alliances"]["blue"]["team_keys"]
+
+                    red_score = match["score_breakdown"]["red"]["totalPoints"]
+                    blue_score = match["score_breakdown"]["blue"]["totalPoints"]
+
+                    # Team is on red alliance, record blue alliance scores
+                    if team_key in red_alliance:
+                        for opponent_key in blue_alliance:
+                            opponent = opponent_key[3:]  # Remove 'frc' prefix
+                            if opponent not in vs_team_data:
+                                vs_team_data[opponent] = {"total_points": 0, "match_count": 0}
+
+                            vs_team_data[opponent]["total_points"] += blue_score
+                            vs_team_data[opponent]["match_count"] += 1
+
+                    # Team is on blue alliance, record red alliance scores
+                    if team_key in blue_alliance:
+                        for opponent_key in red_alliance:
+                            opponent = opponent_key[3:]  # Remove 'frc' prefix
+                            if opponent not in vs_team_data:
+                                vs_team_data[opponent] = {"total_points": 0, "match_count": 0}
+
+                            vs_team_data[opponent]["total_points"] += red_score
+                            vs_team_data[opponent]["match_count"] += 1
+
+                # Calculate results for this team
+                total_difference = 0
+                total_teams = 0
+
+                for opponent in vs_team_data:
+                    if opponent in all_teams_data and vs_team_data[opponent]["match_count"] > 0:
+                        overall_avg = all_teams_data[opponent]["total_points"] / all_teams_data[opponent]["match_count"]
+                        vs_target_avg = vs_team_data[opponent]["total_points"] / vs_team_data[opponent]["match_count"]
+                        point_difference = overall_avg - vs_target_avg
+
+                        total_difference += point_difference
+                        total_teams += 1
+
+                # Calculate average defensive impact
+                if total_teams > 0:
+                    avg_defensive_impact = round(total_difference / total_teams, 2)
+
+                    # Add to team's overall impact data
+                    if team not in team_impacts:
+                        team_impacts[team] = [avg_defensive_impact, 1]
+                    else:
+                        # Average with existing impact data
+                        current_total = team_impacts[team][0] * team_impacts[team][1]
+                        new_total = current_total + avg_defensive_impact
+                        new_count = team_impacts[team][1] + 1
+                        team_impacts[team] = [new_total / new_count, new_count]
+        except:
+            # Skip this event if there was an error
+            continue
+
+    # Format results as list of tuples for easier sorting
+    formatted_impacts = []
+    for team, impact_data in team_impacts.items():
+        formatted_impacts.append((team, round(impact_data[0], 2), impact_data[1]))
+
+    # Sort by defensive impact (highest first)
+    formatted_impacts.sort(key=lambda x: x[1], reverse=True)
+
+    # Remove teams 9991, 9992, and 9993 from the list as those are DEMO teams
+    formatted_impacts = [impact for impact in formatted_impacts if impact[0] not in ['9991', '9992', '9993']]
+
+    return formatted_impacts
+
 # ----------- 2025 Game Specific Functions ------------

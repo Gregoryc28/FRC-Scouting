@@ -88,7 +88,7 @@ team = teams
 #team = teams[teams.index(','):]
 #team = team[2:]
 
-data_selection_choices = ["Team-Performance-Stats", "Match-Videos", "Event-Stats", "Match-Predictions", "Game-Specific-Stats"]
+data_selection_choices = ["Team-Performance-Stats", "Match-Videos", "Event-Stats", "Match-Predictions", "Game-Specific-Stats", "Defensive-Impact-Rankings", "Worldwide-Defensive-Impact-Rankings"]
 
 data_selector = st.selectbox("Select a type of Data to search for", data_selection_choices)
 
@@ -1111,3 +1111,300 @@ if data_selector == "Game-Specific-Stats":
 
     # Add info message
     st.info("All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)", icon="ℹ️")
+
+# Add a new section for defensive rankings
+if data_selector == "Defensive-Impact-Rankings":
+    st.title(f"Defensive Rankings for {event}")
+
+    with st.spinner("Calculating defensive rankings..."):
+        # Calculate defensive impact for qualification matches
+        qual_defensive_rankings = calculate_defensive_impact_qualifications(event_key)
+
+        # Calculate defensive impact for playoff matches
+        playoff_defensive_rankings = calculate_defensive_impact_playoffs_all(event_key)
+
+    # Create tabs for qualification and playoff rankings
+    qual_tab, playoff_tab = st.tabs(["Qualification Matches", "Playoff Matches"])
+
+    with qual_tab:
+        st.write("## Qualification Matches Defensive Rankings")
+        st.write("Teams ranked by how many points less their opponents score compared to their average.")
+
+        if qual_defensive_rankings:
+            # Create a DataFrame for the qualification rankings
+            qual_data = []
+            rank = 1
+            for team_num, impact in qual_defensive_rankings:
+                qual_data.append({
+                    "Rank": rank,
+                    "Team": team_num,
+                    "Defensive Impact": f"{impact} points"
+                })
+                rank += 1
+
+            qual_df = pd.DataFrame(qual_data)
+
+
+            # Highlight the selected team
+            def highlight_selected_team(row):
+                if row['Team'] == team:
+                    return ['background-color: rgba(255, 165, 0, 0.3)'] * len(row)
+                return [''] * len(row)
+
+
+            # Apply the styling
+            styled_qual_df = qual_df.style.apply(highlight_selected_team, axis=1)
+
+            # Display the table
+            st.table(styled_qual_df)
+
+            # Find the selected team's rank
+            selected_team_rank = None
+            for i, (team_num, _) in enumerate(qual_defensive_rankings):
+                if team_num == team:
+                    selected_team_rank = i + 1
+                    break
+
+            if selected_team_rank:
+                st.write(
+                    f"Team {team} is ranked #{selected_team_rank} out of {len(qual_defensive_rankings)} teams for defensive impact in qualification matches.")
+        else:
+            st.warning("No qualification match data available.", icon="⚠️")
+
+    with playoff_tab:
+        st.write("## Playoff Matches Defensive Rankings")
+        st.write("Teams ranked by how many points less their opponents score compared to their average.")
+
+        if playoff_defensive_rankings:
+            # Create a DataFrame for the playoff rankings
+            playoff_data = []
+            rank = 1
+            for team_num, impact in playoff_defensive_rankings:
+                playoff_data.append({
+                    "Rank": rank,
+                    "Team": team_num,
+                    "Defensive Impact": f"{impact} points"
+                })
+                rank += 1
+
+            playoff_df = pd.DataFrame(playoff_data)
+
+
+            # Highlight the selected team if they made playoffs
+            def highlight_selected_team(row):
+                if row['Team'] == team:
+                    return ['background-color: rgba(255, 165, 0, 0.3)'] * len(row)
+                return [''] * len(row)
+
+
+            # Apply the styling
+            styled_playoff_df = playoff_df.style.apply(highlight_selected_team, axis=1)
+
+            # Display the table
+            st.table(styled_playoff_df)
+
+            # Find the selected team's rank
+            selected_team_playoff_rank = None
+            for i, (team_num, _) in enumerate(playoff_defensive_rankings):
+                if team_num == team:
+                    selected_team_playoff_rank = i + 1
+                    break
+
+            if selected_team_playoff_rank:
+                st.write(
+                    f"Team {team} is ranked #{selected_team_playoff_rank} out of {len(playoff_defensive_rankings)} teams for defensive impact in playoff matches.")
+            else:
+                st.warning(f"Team {team} did not participate in playoff matches at this event.", icon="⚠️")
+        else:
+            st.warning("No playoff match data available for this event.", icon="⚠️")
+
+    # Add an info box to give credit
+    st.info(
+        "All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)",
+        icon="ℹ️")
+
+# Add a cache for worldwide defensive rankings
+worldwide_rankings_cache = None
+
+# Add the new section for worldwide defensive impact rankings
+if data_selector == "Worldwide-Defensive-Impact-Rankings":
+    st.title("Worldwide Defensive Impact Rankings")
+
+
+    # Use caching to avoid recalculating on every page change
+    @st.cache_data(ttl=3600)  # Cache for 1 hour
+    def get_cached_worldwide_rankings():
+        with st.spinner("Calculating worldwide defensive rankings... This may take a moment."):
+            return get_worldwide_teams_playoff_defensive_impact()
+
+
+    # Get or use cached worldwide defensive impact data
+    worldwide_defensive_rankings = get_cached_worldwide_rankings()
+
+    # Display information about the data
+    st.write("""
+    ## About This Data
+    These rankings show how many points less teams score when playing against a specific team compared to their average.
+
+    A higher defensive impact means teams consistently score fewer points when facing this team, indicating strong defensive capabilities.
+
+    The data is aggregated across all events where playoff matches (SF and F) have been played.
+    """)
+
+    # Top 50 Teams Section
+    st.write("## Top 50 Teams Worldwide")
+    top_50_expander = st.expander("Show Top 50 Teams", expanded=True)
+
+    with top_50_expander:
+        if worldwide_defensive_rankings:
+            # Create a DataFrame for the top 50 rankings
+            top_50 = worldwide_defensive_rankings[:50]
+            top_data = []
+
+            for i, (team_num, impact, event_count) in enumerate(top_50):
+                top_data.append({
+                    "Rank": f"#{i + 1}",
+                    "Team": team_num,
+                    "Defensive Impact": f"{impact} points",
+                    "Events": event_count
+                })
+
+            top_df = pd.DataFrame(top_data)
+
+
+            # Highlight the selected team if it's in the top 50
+            def highlight_selected_team(row):
+                if row['Team'] == team:
+                    return ['background-color: rgba(255, 165, 0, 0.3)'] * len(row)
+                return [''] * len(row)
+
+
+            # Apply styling
+            styled_top_df = top_df.style.apply(highlight_selected_team, axis=1)
+
+            # Use Streamlit's dataframe function with hide_index=True and full width
+            st.dataframe(styled_top_df, hide_index=True, use_container_width=True)
+
+            # Find if selected team is in top 50
+            selected_in_top50 = any(team_num == team for team_num, _, _ in top_50)
+
+            if not selected_in_top50:
+                # Find the selected team's rank in the full list
+                selected_team_rank = None
+                for i, (team_num, _, _) in enumerate(worldwide_defensive_rankings):
+                    if team_num == team:
+                        selected_team_rank = i + 1
+                        break
+
+                if selected_team_rank:
+                    st.write(
+                        f"Team {team} is ranked #{selected_team_rank} out of {len(worldwide_defensive_rankings)} teams worldwide.")
+                else:
+                    st.warning(f"Team {team} does not have playoff defensive data available.", icon="⚠️")
+        else:
+            st.warning("No worldwide defensive ranking data available.", icon="⚠️")
+
+    # All Teams Section
+    st.write("## All Teams Worldwide")
+    st.write("This list shows all teams with playoff defensive data, ranked by their defensive impact.")
+    all_teams_expander = st.expander("Show All Teams", expanded=False)
+
+    with all_teams_expander:
+        if worldwide_defensive_rankings:
+            # Create a pagination system
+            items_per_page = 100
+            total_pages = (len(worldwide_defensive_rankings) + items_per_page - 1) // items_per_page
+
+            # Store pagination state in session_state
+            if 'current_page' not in st.session_state:
+                # Find page where selected team appears
+                selected_team_page = 1
+                for i, (team_num, _, _) in enumerate(worldwide_defensive_rankings):
+                    if team_num == team:
+                        selected_team_page = (i // items_per_page) + 1
+                        break
+                st.session_state.current_page = selected_team_page
+
+            # Create a placeholder for the page number display
+            page_display = st.empty()
+
+            # Page selection with buttons
+            col1, col2, col3, col4 = st.columns([2, 1, 1, 2])
+
+            with col1:
+                if st.button("⏮️ First Page"):
+                    st.session_state.current_page = 1
+                if st.button("⏪ Previous Page"):
+                    st.session_state.current_page = max(1, st.session_state.current_page - 1)
+
+            with col2:
+                # This will be updated after button clicks
+                page_display.write(f"Page {st.session_state.current_page} of {total_pages}")
+
+            with col3:
+                # Jump to page input
+                jump_to = st.number_input("Go to page", min_value=1, max_value=total_pages,
+                                          value=st.session_state.current_page)
+                if st.button("Jump"):
+                    st.session_state.current_page = jump_to
+                    # Update the page display immediately after jumping
+                    page_display.write(f"Page {st.session_state.current_page} of {total_pages}")
+
+            with col4:
+                if st.button("⏩ Next Page"):
+                    st.session_state.current_page = min(total_pages, st.session_state.current_page + 1)
+                if st.button("⏭️ Last Page"):
+                    st.session_state.current_page = total_pages
+
+            # Display current page of data
+            start_idx = (st.session_state.current_page - 1) * items_per_page
+            end_idx = min(start_idx + items_per_page, len(worldwide_defensive_rankings))
+
+            page_data = []
+            for i in range(start_idx, end_idx):
+                team_num, impact, event_count = worldwide_defensive_rankings[i]
+                page_data.append({
+                    "Rank": f"#{i + 1}",
+                    "Team": team_num,
+                    "Defensive Impact": f"{impact} points",
+                    "Events": event_count
+                })
+
+            page_df = pd.DataFrame(page_data)
+
+
+            # Highlight the selected team
+            def highlight_selected_team(row):
+                if row['Team'] == team:
+                    return ['background-color: rgba(255, 165, 0, 0.3)'] * len(row)
+                return [''] * len(row)
+
+
+            # Apply styling
+            styled_page_df = page_df.style.apply(highlight_selected_team, axis=1)
+
+            # Use Streamlit's dataframe function with hide_index=True and full width
+            st.dataframe(styled_page_df, hide_index=True, use_container_width=True)
+
+            # Update page display again after rendering the table to ensure it's correct
+            page_display.write(f"Page {st.session_state.current_page} of {total_pages}")
+
+            # Display info about the selected team
+            selected_team_rank = None
+            for i, (team_num, _, _) in enumerate(worldwide_defensive_rankings):
+                if team_num == team:
+                    selected_team_rank = i + 1
+                    break
+
+            if selected_team_rank:
+                st.write(
+                    f"Team {team} is ranked #{selected_team_rank} out of {len(worldwide_defensive_rankings)} teams worldwide.")
+            else:
+                st.warning(f"Team {team} does not have playoff defensive data available.", icon="⚠️")
+        else:
+            st.warning("No worldwide defensive ranking data available.", icon="⚠️")
+
+    # Add an info box to give credit
+    st.info(
+        "All data is provided by Longwood Robotics Team 564\n\nCreated by: Gregory Cohen, John Hirdt, Ryan Pfister\n\nFor questions and comments, please contact us at: john.hirdt@longwoodcsd.org\n\nTo visit our website, [click here](https://longwoodrobotics.com/)",
+        icon="ℹ️")
