@@ -1282,8 +1282,12 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
             # Apply styling
             styled_top_df = top_df.style.apply(highlight_selected_team, axis=1)
 
-            # Use Streamlit's dataframe function with hide_index=True and full width
-            st.dataframe(styled_top_df, hide_index=True, use_container_width=True)
+            # Use column_config to hide the index
+            st.dataframe(
+                styled_top_df,
+                use_container_width=True,
+                column_config={'_index': None}  # Hide the index column
+            )
 
             # Find if selected team is in top 50
             selected_in_top50 = any(team_num == team for team_num, _, _ in top_50)
@@ -1383,8 +1387,12 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
             # Apply styling
             styled_page_df = page_df.style.apply(highlight_selected_team, axis=1)
 
-            # Use Streamlit's dataframe function with hide_index=True and full width
-            st.dataframe(styled_page_df, hide_index=True, use_container_width=True)
+            # Use column_config to hide the index
+            st.dataframe(
+                styled_page_df,
+                use_container_width=True,
+                column_config={'_index': None}  # Hide the index column
+            )
 
             # Update page display again after rendering the table to ensure it's correct
             page_display.write(f"Page {st.session_state.current_page} of {total_pages}")
