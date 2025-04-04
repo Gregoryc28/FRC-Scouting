@@ -292,7 +292,12 @@ if data_selector == "Team-Performance-Stats":
                         # Sort by the point difference to show largest defensive impact first
                         playoff_df = playoff_df.sort_values(by="Points Difference", ascending=False)
 
-                        st.table(playoff_df)
+                        # Use column_config to hide the index
+                        st.dataframe(
+                            playoff_df,
+                            use_container_width=True,
+                            column_config={'_index': None}  # Hide the index column
+                        )
                 else:
                     # Negative or no defensive impact in playoffs
                     if playoff_defensive_impact < 0:
@@ -1152,11 +1157,15 @@ if data_selector == "Defensive-Impact-Rankings":
                 return [''] * len(row)
 
 
-            # Apply the styling
+            # Apply styling
             styled_qual_df = qual_df.style.apply(highlight_selected_team, axis=1)
 
-            # Display the table
-            st.table(styled_qual_df)
+            # Use column_config to hide the index
+            st.dataframe(
+                styled_qual_df,
+                use_container_width=True,
+                column_config={'_index': None}  # Hide the index column
+            )
 
             # Find the selected team's rank
             selected_team_rank = None
@@ -1196,12 +1205,15 @@ if data_selector == "Defensive-Impact-Rankings":
                     return ['background-color: rgba(255, 165, 0, 0.3)'] * len(row)
                 return [''] * len(row)
 
-
-            # Apply the styling
+            # Apply styling
             styled_playoff_df = playoff_df.style.apply(highlight_selected_team, axis=1)
 
-            # Display the table
-            st.table(styled_playoff_df)
+            # Use column_config to hide the index
+            st.dataframe(
+                styled_playoff_df,
+                use_container_width=True,
+                column_config={'_index': None}  # Hide the index column
+            )
 
             # Find the selected team's rank
             selected_team_playoff_rank = None
