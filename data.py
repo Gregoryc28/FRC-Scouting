@@ -1865,17 +1865,29 @@ def get_worldwide_teams_playoff_defensive_impact():
     This function aggregates data across multiple events.
 
     Returns:
-        list: List of tuples (team, avg_defensive_impact, num_events) sorted by impact
+        list: List of tuples (team, avg_defensive_impact, num_events, worlds_status, playoff_matches, alliance_position)
     """
     # Get the current year
     import datetime
     current_year = datetime.datetime.now().year
 
+    # Track team defensive impacts across all events
+    team_impacts = {}  # team -> [impacts, event_count, worlds_status, playoff_matches, alliance_positions]
+
+    # Championship event key for current year
+    championship_key = f"{current_year}cmptx"  # Using Houston championship key format
+
+    # Get all teams competing at the championship event
+    try:
+        championship_teams_data = getTBA(f"event/{championship_key}/teams/keys")
+        # Create a set of team numbers (without "frc" prefix) for easy lookup
+        worlds_teams = {team_key[3:] for team_key in championship_teams_data}
+    except:
+        # If there's an error getting championship teams, use an empty set
+        worlds_teams = set()
+
     # Get all events for the current year
     all_events = getTBA(f"events/{current_year}")
-
-    # Track team defensive impacts across all events
-    team_impacts = {}  # team -> [impacts, event_count]
 
     # Process each event
     for event in all_events:
@@ -1885,6 +1897,20 @@ def get_worldwide_teams_playoff_defensive_impact():
             # Skip events that haven't happened yet or don't have complete data
             if event.get("start_date") is None or event.get("end_date") is None:
                 continue
+
+            # Get playoff alliances to determine team positions
+            playoff_alliances = getTBA(f"event/{event_key}/alliances")
+            team_alliance_positions = {}
+
+            # Process alliance data to identify team positions
+            for alliance_num, alliance in enumerate(playoff_alliances):
+                picks = alliance.get("picks", [])
+                for position, team_key in enumerate(picks):
+                    team_num = team_key[3:]  # Remove 'frc' prefix
+                    # Track alliance position (0 = captain, 1 = first pick, 2 = second pick)
+                    if team_num not in team_alliance_positions:
+                        team_alliance_positions[team_num] = []
+                    team_alliance_positions[team_num].append(position)
 
             # Get all playoff matches from the event
             all_matches = getTBA(f"event/{event_key}/matches")
@@ -1898,12 +1924,20 @@ def get_worldwide_teams_playoff_defensive_impact():
 
             # Identify teams that participated in playoffs
             playoff_teams = set()
+            team_playoff_match_count = {}
+
             for match in playoff_matches:
                 red_alliance = match["alliances"]["red"]["team_keys"]
                 blue_alliance = match["alliances"]["blue"]["team_keys"]
 
                 for team_key in red_alliance + blue_alliance:
-                    playoff_teams.add(team_key[3:])  # Remove 'frc' prefix
+                    team_num = team_key[3:]  # Remove 'frc' prefix
+                    playoff_teams.add(team_num)
+
+                    # Count playoff matches per team
+                    if team_num not in team_playoff_match_count:
+                        team_playoff_match_count[team_num] = 0
+                    team_playoff_match_count[team_num] += 1
 
             # Create a dictionary to track all teams' average scores in playoffs
             all_teams_data = {}
@@ -1986,15 +2020,38 @@ def get_worldwide_teams_playoff_defensive_impact():
                 if total_teams > 0:
                     avg_defensive_impact = round(total_difference / total_teams, 2)
 
+                    # Check if team is going to worlds
+                    is_going_to_worlds = team in worlds_teams
+
+                    # Get playoff match count
+                    playoff_match_count = team_playoff_match_count.get(team, 0)
+
+                    # Check if team was 2nd pick (position 2)
+                    was_second_pick = 2 in team_alliance_positions.get(team, [])
+
                     # Add to team's overall impact data
                     if team not in team_impacts:
-                        team_impacts[team] = [avg_defensive_impact, 1]
+                        team_impacts[team] = [avg_defensive_impact, 1, is_going_to_worlds, playoff_match_count,
+                                              was_second_pick]
                     else:
+                        # Update existing data
+                        current_impact = team_impacts[team][0]
+                        current_count = team_impacts[team][1]
+                        current_worlds = team_impacts[team][2] or is_going_to_worlds  # Keep as True if it was already True
+                        current_matches = team_impacts[team][3]
+                        current_second_pick = team_impacts[team][4]
+
                         # Average with existing impact data
-                        current_total = team_impacts[team][0] * team_impacts[team][1]
-                        new_total = current_total + avg_defensive_impact
-                        new_count = team_impacts[team][1] + 1
-                        team_impacts[team] = [new_total / new_count, new_count]
+                        new_impact = (current_impact * current_count + avg_defensive_impact) / (current_count + 1)
+
+                        # Update playoff match count
+                        new_matches = current_matches + playoff_match_count
+
+                        # Update second pick status
+                        new_second_pick = current_second_pick or was_second_pick
+
+                        team_impacts[team] = [new_impact, current_count + 1, current_worlds, new_matches,
+                                              new_second_pick]
         except:
             # Skip this event if there was an error
             continue
@@ -2002,13 +2059,17 @@ def get_worldwide_teams_playoff_defensive_impact():
     # Format results as list of tuples for easier sorting
     formatted_impacts = []
     for team, impact_data in team_impacts.items():
-        formatted_impacts.append((team, round(impact_data[0], 2), impact_data[1]))
+        formatted_impacts.append((
+            team,
+            round(impact_data[0], 2),  # defensive impact
+            impact_data[1],  # event count
+            impact_data[2],  # competed at worlds
+            impact_data[3],  # playoff match count
+            impact_data[4]  # was second pick
+        ))
 
     # Sort by defensive impact (highest first)
     formatted_impacts.sort(key=lambda x: x[1], reverse=True)
-
-    # Remove teams 9991, 9992, and 9993 from the list as those are DEMO teams
-    formatted_impacts = [impact for impact in formatted_impacts if impact[0] not in ['9991', '9992', '9993']]
 
     return formatted_impacts
 

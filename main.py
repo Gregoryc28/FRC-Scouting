@@ -1263,17 +1263,55 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
     The data is aggregated across all events where playoff matches (SF and F) have been played.
     """)
 
+    # Add after worldwide_defensive_rankings = get_cached_worldwide_rankings()
+    # Filter options
+    st.write("## Filter Options")
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+
+    with filter_col1:
+        worlds_filter = st.checkbox("Only Teams Going to Worlds", value=False)
+
+    with filter_col2:
+        min_matches_filter = st.checkbox("Teams with 4+ Playoff Matches", value=False)
+
+    with filter_col3:
+        second_pick_filter = st.checkbox("Teams that were 2nd Pick", value=False)
+
+    # Apply filters
+    filtered_rankings = worldwide_defensive_rankings.copy()
+
+    if worlds_filter:
+        filtered_rankings = [team_data for team_data in filtered_rankings if team_data[3]]  # Index 3 is worlds status
+
+    if min_matches_filter:
+        filtered_rankings = [team_data for team_data in filtered_rankings if
+                             team_data[4] >= 4]  # Index 4 is playoff match count
+
+    if second_pick_filter:
+        filtered_rankings = [team_data for team_data in filtered_rankings if
+                             team_data[5]]  # Index 5 is second pick status
+
+    # Display the count of teams after filtering
+    if worlds_filter or min_matches_filter or second_pick_filter:
+        st.write(f"Showing {len(filtered_rankings)} teams after applying filters")
+
+    # Update the code to use filtered_rankings instead of worldwide_defensive_rankings
+    # in both the Top 50 Teams section and All Teams section
+
     # Top 50 Teams Section
     st.write("## Top 50 Teams Worldwide")
     top_50_expander = st.expander("Show Top 50 Teams", expanded=True)
 
     with top_50_expander:
-        if worldwide_defensive_rankings:
-            # Create a DataFrame for the top 50 rankings
-            top_50 = worldwide_defensive_rankings[:50]
+        if filtered_rankings:
+            # Take top 50 from filtered rankings
+            top_50 = filtered_rankings[:50]
             top_data = []
+            for i, team_data in enumerate(top_50):
+                team_num = team_data[0]  # Extract team number from tuple
+                impact = team_data[1]  # Extract impact from tuple
+                event_count = team_data[2]  # Extract event count from tuple
 
-            for i, (team_num, impact, event_count) in enumerate(top_50):
                 top_data.append({
                     "Rank": f"#{i + 1}",
                     "Team": team_num,
@@ -1302,7 +1340,7 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
             )
 
             # Find if selected team is in top 50
-            selected_in_top50 = any(team_num == team for team_num, _, _ in top_50)
+            selected_in_top50 = any(team_data[0] == team for team_data in top_50)
 
             if not selected_in_top50:
                 # Find the selected team's rank in the full list
@@ -1331,11 +1369,17 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
             items_per_page = 100
             total_pages = (len(worldwide_defensive_rankings) + items_per_page - 1) // items_per_page
 
+            if filtered_rankings:
+                # Create a pagination system
+                items_per_page = 100
+                total_pages = (len(filtered_rankings) + items_per_page - 1) // items_per_page
+
             # Store pagination state in session_state
             if 'current_page' not in st.session_state:
                 # Find page where selected team appears
                 selected_team_page = 1
-                for i, (team_num, _, _) in enumerate(worldwide_defensive_rankings):
+                for i, team_data in enumerate(worldwide_defensive_rankings):
+                    team_num = team_data[0]
                     if team_num == team:
                         selected_team_page = (i // items_per_page) + 1
                         break
@@ -1372,18 +1416,19 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
                 if st.button("⏭️ Last Page"):
                     st.session_state.current_page = total_pages
 
+            # Then update the part that displays the current page data:
             # Display current page of data
             start_idx = (st.session_state.current_page - 1) * items_per_page
-            end_idx = min(start_idx + items_per_page, len(worldwide_defensive_rankings))
+            end_idx = min(start_idx + items_per_page, len(filtered_rankings))
 
             page_data = []
             for i in range(start_idx, end_idx):
-                team_num, impact, event_count = worldwide_defensive_rankings[i]
+                team_data = filtered_rankings[i]
                 page_data.append({
                     "Rank": f"#{i + 1}",
-                    "Team": team_num,
-                    "Defensive Impact": f"{impact} points",
-                    "Events": event_count
+                    "Team": team_data[0],
+                    "Defensive Impact": f"{team_data[1]} points",
+                    "Events": team_data[2]
                 })
 
             page_df = pd.DataFrame(page_data)
@@ -1411,16 +1456,16 @@ if data_selector == "Worldwide-Defensive-Impact-Rankings":
 
             # Display info about the selected team
             selected_team_rank = None
-            for i, (team_num, _, _) in enumerate(worldwide_defensive_rankings):
-                if team_num == team:
+            for i, team_data in enumerate(filtered_rankings):
+                if team_data[0] == team:
                     selected_team_rank = i + 1
                     break
 
             if selected_team_rank:
                 st.write(
-                    f"Team {team} is ranked #{selected_team_rank} out of {len(worldwide_defensive_rankings)} teams worldwide.")
+                    f"Team {team} is ranked #{selected_team_rank} out of {len(filtered_rankings)} teams in the filtered list.")
             else:
-                st.warning(f"Team {team} does not have playoff defensive data available.", icon="⚠️")
+                st.warning(f"Team {team} does not appear in the filtered list.", icon="⚠️")
         else:
             st.warning("No worldwide defensive ranking data available.", icon="⚠️")
 
